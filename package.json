@@ -1,0 +1,13 @@
+{
+  "name": "miramax",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "build": "npm --prefix \"mvp/first version\" run build",
+    "dev": "npm --prefix \"mvp/first version\" run dev",
+    "install:mvp": "npm --prefix \"mvp/first version\" ci"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
