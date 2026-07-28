@@ -3,4 +3,12 @@ node_modules/
 dist/
 .env
 .env.*
+!.env.example
 *.log
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.playwright-mcp/
+# separate repo: github.com/abbos-khamidov/miramax-admin-web
+/bot/admin-webapp/
