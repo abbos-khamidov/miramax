@@ -1,6 +1,8 @@
+from pathlib import Path
+
 from aiogram import F, Router
 from aiogram.filters import Command, CommandObject, CommandStart
-from aiogram.types import Message
+from aiogram.types import FSInputFile, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.models import InviteTargetRole, RoleName
@@ -18,6 +20,8 @@ from services.seller_bot.i18n import (
 from services.seller_bot.keyboards import LANGUAGE_MENU_LABELS, language_menu
 
 router = Router(name="supplier_seller_start")
+
+HELP_VIDEO_PATH = Path(__file__).resolve().parents[3] / "help.mp4"
 
 
 async def _send_menu(message: Message, role: RoleName, lang: str) -> None:
@@ -95,6 +99,11 @@ async def language_chosen(message: Message, session: AsyncSession) -> None:
     lang = LANGUAGE_CODE_BY_LABEL[message.text]
     await roles_service.set_language(session, message.from_user.id, lang)
     await message.answer(t(lang, "language_saved"))
+
+    if role.role == RoleName.SELLER and HELP_VIDEO_PATH.exists():
+        await message.answer(t(lang, "watch_video_prompt"))
+        await message.answer_video(FSInputFile(HELP_VIDEO_PATH))
+
     await _send_menu(message, role.role, lang)
 
 

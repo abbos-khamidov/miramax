@@ -116,6 +116,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "а выдачу товара подтверждает продавец через «🔄 Обмен»."
         ),
         "support_text": "Вопросы и проблемы — пишите в поддержку Miramax: @miramax_support.",
+        "watch_video_prompt": "Чтобы лучше понять, как пользоваться ботом, посмотрите короткое видео 👇",
     },
     "uz": {
         "choose_language": "Interfeys tilini tanlang:",
@@ -200,6 +201,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "tovarni berishni esa sotuvchi «🔄 Almashtirish» orqali tasdiqlaydi."
         ),
         "support_text": "Savol va muammolar bo'yicha Miramax yordamiga yozing: @miramax_support.",
+        "watch_video_prompt": "Botdan qanday foydalanishni yaxshiroq tushunish uchun qisqacha videoni tomosha qiling 👇",
     },
     "tr": {
         "choose_language": "Arayüz dilini seçin:",
@@ -284,6 +286,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "teslimatı ise satıcı «🔄 Takas» üzerinden onaylar."
         ),
         "support_text": "Sorular ve sorunlar için Miramax destek ile iletişime geçin: @miramax_support.",
+        "watch_video_prompt": "Botu nasıl kullanacağınızı daha iyi anlamak için kısa videoyu izleyin 👇",
     },
 }
 
