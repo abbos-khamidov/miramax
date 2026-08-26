@@ -7,7 +7,7 @@ from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramNetworkError
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.types import BotCommand
+from aiogram.types import BotCommand, MenuButtonWebApp, WebAppInfo
 
 from core.config import settings
 from services.client_bot import handlers
@@ -20,13 +20,20 @@ async def _set_commands(bot: Bot) -> None:
         [
             BotCommand(command="start", description="Botni boshlash"),
             BotCommand(command="menu", description="Mening menyum"),
-            BotCommand(command="catalog", description="Katalogni ochish"),
+            BotCommand(command="catalog", description="Sovg'alarni ochish"),
             BotCommand(command="balance", description="Ballarim"),
-            BotCommand(command="products", description="Tovarlar"),
-            BotCommand(command="search", description="Tovar qidirish"),
             BotCommand(command="history", description="Almashtirish tarixi"),
             BotCommand(command="help", description="Yordam"),
         ]
+    )
+
+
+async def _set_menu_button(bot: Bot) -> None:
+    """Persistent Menu Button (next to the message box) — a second, always-visible
+    entry point into the Mini App catalog, alongside the Новинки/Призы keyboard
+    buttons (services/client_bot/keyboards.py:customer_menu)."""
+    await bot.set_chat_menu_button(
+        menu_button=MenuButtonWebApp(text="Miramax Bonus", web_app=WebAppInfo(url=settings.miniapp_url))
     )
 
 
@@ -61,6 +68,7 @@ async def main() -> None:
             await bot.delete_webhook(drop_pending_updates=True, request_timeout=120)
             await _set_commands(bot)
             await _set_profile_texts(bot)
+            await _set_menu_button(bot)
             await dp.start_polling(bot)
             break
         except TelegramNetworkError as exc:
