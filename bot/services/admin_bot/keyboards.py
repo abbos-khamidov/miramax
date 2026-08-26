@@ -1,5 +1,6 @@
-from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
+from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
 
+from core.config import settings
 from services.admin_bot.i18n import LANGUAGE_LABELS, all_variants, t
 
 ADD_USER_LABELS = all_variants("menu_add_user")
@@ -32,7 +33,14 @@ def factory_menu(lang: str) -> ReplyKeyboardMarkup:
             [KeyboardButton(text=t(lang, "menu_add_user"))],
             [KeyboardButton(text=t(lang, "menu_view_users"))],
             [KeyboardButton(text=t(lang, "menu_points_rate")), KeyboardButton(text=t(lang, "menu_online_showcase"))],
-            [KeyboardButton(text=t(lang, "menu_analytics")), KeyboardButton(text=t(lang, "menu_language"))],
+            [
+                # WebApp button, not a plain reply button + follow-up link — opens the
+                # analytics site in one tap. Safe here (unlike the customer Mini App)
+                # because that site has its own login/password, it never reads
+                # Telegram initData, so it can't break the way the Mini App's did.
+                KeyboardButton(text=t(lang, "menu_analytics"), web_app=WebAppInfo(url=settings.analytics_url)),
+                KeyboardButton(text=t(lang, "menu_language")),
+            ],
         ],
         resize_keyboard=True,
     )

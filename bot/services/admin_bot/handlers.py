@@ -4,7 +4,7 @@ import qrcode
 from aiogram import Bot, F, Router
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.fsm.context import FSMContext
-from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.types import BufferedInputFile, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import settings
@@ -27,7 +27,6 @@ from services.admin_bot.i18n import (
 from services.admin_bot.keyboards import (
     ADD_USER_LABELS,
     ADMIN_LABELS,
-    ANALYTICS_LABELS,
     BACK_LABELS,
     CANCEL_LABELS,
     CHANGE_VALUE_LABELS,
@@ -298,16 +297,8 @@ async def add_user_city(message: Message, state: FSMContext, session: AsyncSessi
     )
 
 
-@router.message(F.text.in_(ANALYTICS_LABELS))
-async def factory_analytics(message: Message, session: AsyncSession) -> None:
-    if not await _has_factory_access(session, message.from_user.id):
-        await message.answer(t("ru", "no_access"))
-        return
-    lang = await _lang_for(session, message.from_user.id) or "ru"
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text=t(lang, "analytics_open_button"), url=settings.analytics_url)]]
-    )
-    await message.answer(t(lang, "analytics_link_text"), reply_markup=keyboard)
+    # "Открыть аналитику" is a WebApp button in factory_menu() — opens the site in
+    # one tap, no bot round-trip needed (see keyboards.py for why that's safe here).
 
 
 @router.message(F.text.in_(POINTS_RATE_LABELS))
