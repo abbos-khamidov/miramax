@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Check, Clock, History, Minus, Package, Plus, Settings, ShoppingCart, X } from "lucide-react";
+import { Check, Clock, Gift, History, Minus, Plus, Settings, ShoppingCart, Sparkles, X } from "lucide-react";
 
 import { Badge } from "./components/ui/badge";
 import { Button } from "./components/ui/button";
@@ -21,8 +21,15 @@ import {
   updateAdminProduct,
 } from "./lib/api";
 
-type Tab = "catalog" | "cart" | "history" | "admin";
+type Tab = "new" | "catalog" | "cart" | "history" | "admin";
 type Cart = Record<number, number>;
+
+const NEW_ARRIVALS_LIMIT = 10;
+
+function initialTab(): Tab {
+  const requested = new URLSearchParams(window.location.search).get("tab");
+  return requested === "new" ? "new" : "catalog";
+}
 
 const statusLabel: Record<RedemptionStatus, string> = {
   pending: "Kutilmoqda",
@@ -50,7 +57,7 @@ function productVisual(product: Product) {
 }
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>("catalog");
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [me, setMe] = useState<{ balance: number; full_name: string | null; is_admin: boolean } | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [history, setHistory] = useState<Redemption[]>([]);
@@ -84,6 +91,13 @@ export default function App() {
 
   const categories = useMemo(
     () => ["Barchasi", ...Array.from(new Set(products.map((product) => product.category)))],
+    [products],
+  );
+  const newArrivals = useMemo(
+    () =>
+      [...products]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, NEW_ARRIVALS_LIMIT),
     [products],
   );
   const visibleProducts = category === "Barchasi" ? products : products.filter((product) => product.category === category);
@@ -146,6 +160,7 @@ export default function App() {
       <main className="flex-1 px-4 pb-24 pt-4">
         {error && <Alert text={error} tone="error" />}
         {notice && <Alert text={notice} tone="ok" />}
+        {tab === "new" && <NewArrivals products={newArrivals} cart={cart} onAdd={addToCart} onRemove={removeFromCart} />}
         {tab === "catalog" && (
           <Catalog
             products={visibleProducts}
@@ -173,14 +188,13 @@ export default function App() {
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-[480px] border-t bg-card px-3 py-2">
-        <div className="grid grid-cols-4 gap-2">
-          <NavButton active={tab === "catalog"} icon={<Package />} label="Katalog" onClick={() => setTab("catalog")} />
+        <div className={me?.is_admin ? "grid grid-cols-5 gap-2" : "grid grid-cols-4 gap-2"}>
+          <NavButton active={tab === "new"} icon={<Sparkles />} label="Yangiliklar" onClick={() => setTab("new")} />
+          <NavButton active={tab === "catalog"} icon={<Gift />} label="Sovg'alar" onClick={() => setTab("catalog")} />
           <NavButton active={tab === "cart"} icon={<ShoppingCart />} label={`Savatcha${cartItems.length ? ` (${cartItems.length})` : ""}`} onClick={() => setTab("cart")} />
           <NavButton active={tab === "history"} icon={<History />} label="Tarix" onClick={() => setTab("history")} />
-          {me?.is_admin ? (
+          {me?.is_admin && (
             <NavButton active={tab === "admin"} icon={<Settings />} label="Admin" onClick={() => setTab("admin")} />
-          ) : (
-            <div />
           )}
         </div>
       </nav>
@@ -245,6 +259,38 @@ function Catalog(props: {
           );
         })}
         {props.products.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Bu kategoriyada mahsulot yo'q.</p>}
+      </div>
+    </section>
+  );
+}
+
+function NewArrivals(props: {
+  products: Product[];
+  cart: Cart;
+  onAdd: (productId: number) => void;
+  onRemove: (productId: number) => void;
+}) {
+  return (
+    <section className="space-y-4">
+      <p className="text-sm text-muted-foreground">So'nggi qo'shilgan sovg'alar.</p>
+      <div className="grid gap-3">
+        {props.products.map((product) => {
+          const qty = props.cart[product.id] ?? 0;
+          return (
+            <article key={product.id} className="grid grid-cols-[72px_1fr_auto] items-center gap-3 rounded-lg border bg-card p-3">
+              <div className="flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-lg bg-secondary text-secondary-foreground">
+                {productVisual(product)}
+              </div>
+              <div className="min-w-0">
+                <Badge variant="secondary" className="mb-2">Yangi</Badge>
+                <h2 className="truncate text-base font-semibold">{product.name}</h2>
+                <p className="text-sm text-muted-foreground">{formatPoints(product.points_cost)} ball</p>
+              </div>
+              <Stepper qty={qty} onAdd={() => props.onAdd(product.id)} onRemove={() => props.onRemove(product.id)} />
+            </article>
+          );
+        })}
+        {props.products.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Hozircha yangiliklar yo'q.</p>}
       </div>
     </section>
   );
