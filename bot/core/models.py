@@ -1,7 +1,9 @@
 import enum
+import uuid
 from datetime import datetime
 
 from sqlalchemy import BigInteger, Boolean, DateTime, Enum, Float, ForeignKey, Integer, String, Text, func
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.db import Base
@@ -98,9 +100,23 @@ class PointsTransaction(Base):
     reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
     store_id: Mapped[int | None] = mapped_column(ForeignKey("stores.id"), nullable=True)
     seller_telegram_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    tier: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    sale_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     customer: Mapped["CustomerCard"] = relationship(back_populates="points_transactions")
+
+
+class TierConfig(Base):
+    """One row per fixed sale-amount button (номинал) shown in seller_bot's amount
+    composer. `points` is Factory/Admin-editable via /set_tier; new sales freeze the
+    current value into PointsTransaction.points — past rows are never recalculated."""
+
+    __tablename__ = "tier_config"
+
+    tier: Mapped[int] = mapped_column(Integer, primary_key=True)
+    points: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
 
 
 class PointsConfig(Base):
