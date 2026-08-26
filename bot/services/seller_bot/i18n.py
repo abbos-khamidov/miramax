@@ -91,6 +91,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "tier_reset_button": "🔄 Сбросить",
         "tier_confirm_button": "✅ Начислить {points} баллов",
         "tier_not_configured": "Баллы для этой суммы ещё не настроены. Обратитесь к администратору.",
+        "tier_not_configured_button": "⚠️ Баллы не настроены",
         "tier_sale_confirmed": "Начислено {points} баллов покупателю «{name}».",
         "submenu_back": "⬅️ Назад",
         "info_text": (
@@ -169,6 +170,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "tier_reset_button": "🔄 Bekor qilish",
         "tier_confirm_button": "✅ {points} ball qo'shish",
         "tier_not_configured": "Bu summa uchun ball hali sozlanmagan. Administratorga murojaat qiling.",
+        "tier_not_configured_button": "⚠️ Ball sozlanmagan",
         "tier_sale_confirmed": "«{name}» xaridoriga {points} ball qo'shildi.",
         "submenu_back": "⬅️ Orqaga",
         "info_text": (
@@ -247,6 +249,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "tier_reset_button": "🔄 Sıfırla",
         "tier_confirm_button": "✅ {points} puan yükle",
         "tier_not_configured": "Bu tutar için puan henüz ayarlanmadı. Yöneticiyle iletişime geçin.",
+        "tier_not_configured_button": "⚠️ Puan ayarlanmadı",
         "tier_sale_confirmed": "«{name}» müşterisine {points} puan yüklendi.",
         "submenu_back": "⬅️ Geri",
         "info_text": (

@@ -85,15 +85,14 @@ def tier_composer_keyboard(lang: str, tiers: dict[int, int], cart: dict[int, int
     if cart:
         total_points = sum(points_for_tier(tiers, tier) * qty for tier, qty in cart.items())
         rows.append([InlineKeyboardButton(text=t(lang, "tier_reset_button"), callback_data="tier_reset")])
-        if total_points > 0:
-            rows.append(
-                [
-                    InlineKeyboardButton(
-                        text=t(lang, "tier_confirm_button", points=f"{total_points:,}".replace(",", " ")),
-                        callback_data="tier_confirm",
-                    )
-                ]
-            )
+        confirm_label = (
+            t(lang, "tier_confirm_button", points=f"{total_points:,}".replace(",", " "))
+            if total_points > 0
+            else t(lang, "tier_not_configured_button")
+        )
+        # Always rendered (never silently missing) — tapping it while unconfigured still
+        # routes through tier_confirm, which shows the "не настроено" alert either way.
+        rows.append([InlineKeyboardButton(text=confirm_label, callback_data="tier_confirm")])
 
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
