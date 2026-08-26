@@ -4,7 +4,7 @@ import qrcode
 from aiogram import Bot, F, Router
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.fsm.context import FSMContext
-from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboardMarkup, Message, WebAppInfo
+from aiogram.types import BufferedInputFile, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import settings
@@ -23,14 +23,13 @@ from services.admin_bot.i18n import (
     t,
 )
 from services.admin_bot.keyboards import (
-    ADD_PRODUCT_LABELS,
     ADD_USER_LABELS,
     ADMIN_LABELS,
     ANALYTICS_LABELS,
     BACK_LABELS,
     LANGUAGE_MENU_LABELS,
+    ONLINE_SHOWCASE_LABELS,
     POINTS_RATE_LABELS,
-    SUPPLIER_LABELS,
     VIEW_ADMIN_LABELS,
     VIEW_SEARCH_LABELS,
     VIEW_SUPPLIER_LABELS,
@@ -49,11 +48,9 @@ router = Router(name="admin")
 
 _TARGET_ROLE_LABEL_KEY = {
     "admin": "submenu_admin",
-    "supplier": "submenu_supplier",
     "wholesaler": "submenu_wholesaler",
 }
 _TARGET_KIND = {
-    "supplier": SupplierKind.SUPPLIER,
     "wholesaler": SupplierKind.WHOLESALER,
 }
 
@@ -109,18 +106,6 @@ async def start_plain(message: Message, session: AsyncSession) -> None:
         return
 
     await send_factory_menu(message, lang)
-
-
-@router.message(Command("panel"))
-async def panel_cmd(message: Message, session: AsyncSession) -> None:
-    if not await _has_factory_access(session, message.from_user.id):
-        await message.answer(t("ru", "no_access"))
-        return
-    lang = await _lang_for(session, message.from_user.id) or "ru"
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text=t(lang, "menu_open_panel"), web_app=WebAppInfo(url=settings.admin_webapp_url))]]
-    )
-    await message.answer(t(lang, "open_panel_prompt"), reply_markup=keyboard)
 
 
 @router.message(Command("help"))
@@ -198,11 +183,6 @@ async def _start_add_user_flow(message: Message, state: FSMContext, session: Asy
 @router.message(F.text.in_(ADMIN_LABELS))
 async def add_admin_start(message: Message, state: FSMContext, session: AsyncSession) -> None:
     await _start_add_user_flow(message, state, session, "admin")
-
-
-@router.message(F.text.in_(SUPPLIER_LABELS))
-async def add_supplier_start(message: Message, state: FSMContext, session: AsyncSession) -> None:
-    await _start_add_user_flow(message, state, session, "supplier")
 
 
 @router.message(F.text.in_(WHOLESALER_LABELS))
@@ -289,13 +269,12 @@ async def add_user_city(message: Message, state: FSMContext, session: AsyncSessi
     qr_img.save(buf, format="PNG")
     buf.seek(0)
 
-    kind_label = t(lang, "kind_supplier" if kind == SupplierKind.SUPPLIER else "kind_wholesaler")
     await message.answer_photo(
         BufferedInputFile(buf.read(), filename="invite.png"),
         caption=t(
             lang,
             "supplier_created",
-            kind_label=kind_label,
+            kind_label=t(lang, "kind_wholesaler"),
             company_name=data["company_name"],
             city=data["city"],
             first_name=data["first_name"],
@@ -389,7 +368,16 @@ async def _mint_client_file_id(source_bot: Bot, photo_file_id: str) -> str:
         await client_bot.session.close()
 
 
-@router.message(F.text.in_(ADD_PRODUCT_LABELS))
+@router.message(F.text.in_(ONLINE_SHOWCASE_LABELS))
+async def online_showcase(message: Message, session: AsyncSession) -> None:
+    if not await _has_factory_access(session, message.from_user.id):
+        await message.answer(t("ru", "no_access"))
+        return
+    lang = await _lang_for(session, message.from_user.id) or "ru"
+    await message.answer(t(lang, "online_showcase_text", link=settings.miniapp_url))
+
+
+@router.message(Command("addproduct"))
 async def add_product_start(message: Message, state: FSMContext, session: AsyncSession) -> None:
     if not await _has_factory_access(session, message.from_user.id):
         await message.answer(t("ru", "no_access"))

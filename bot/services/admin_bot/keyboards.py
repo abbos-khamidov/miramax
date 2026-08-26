@@ -1,16 +1,14 @@
-from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
+from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
-from core.config import settings
 from services.admin_bot.i18n import LANGUAGE_LABELS, all_variants, t
 
 ADD_USER_LABELS = all_variants("menu_add_user")
 VIEW_USERS_LABELS = all_variants("menu_view_users")
 ANALYTICS_LABELS = all_variants("menu_analytics")
 POINTS_RATE_LABELS = all_variants("menu_points_rate")
-ADD_PRODUCT_LABELS = all_variants("menu_add_product")
+ONLINE_SHOWCASE_LABELS = all_variants("menu_online_showcase")
 LANGUAGE_MENU_LABELS = all_variants("menu_language")
 ADMIN_LABELS = all_variants("submenu_admin")
-SUPPLIER_LABELS = all_variants("submenu_supplier")
 WHOLESALER_LABELS = all_variants("submenu_wholesaler")
 BACK_LABELS = all_variants("submenu_back")
 VIEW_ADMIN_LABELS = all_variants("view_admins")
@@ -22,10 +20,9 @@ VIEW_SEARCH_LABELS = all_variants("view_search")
 def factory_menu(lang: str) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=t(lang, "menu_open_panel"), web_app=WebAppInfo(url=settings.admin_webapp_url))],
             [KeyboardButton(text=t(lang, "menu_add_user"))],
             [KeyboardButton(text=t(lang, "menu_view_users"))],
-            [KeyboardButton(text=t(lang, "menu_points_rate")), KeyboardButton(text=t(lang, "menu_add_product"))],
+            [KeyboardButton(text=t(lang, "menu_points_rate")), KeyboardButton(text=t(lang, "menu_online_showcase"))],
             [KeyboardButton(text=t(lang, "menu_analytics")), KeyboardButton(text=t(lang, "menu_language"))],
         ],
         resize_keyboard=True,
@@ -36,7 +33,6 @@ def add_user_menu(lang: str) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text=t(lang, "submenu_admin"))],
-            [KeyboardButton(text=t(lang, "submenu_supplier"))],
             [KeyboardButton(text=t(lang, "submenu_wholesaler"))],
             [KeyboardButton(text=t(lang, "submenu_back"))],
         ],

@@ -19,7 +19,7 @@ async def _set_commands(bot: Bot) -> None:
     await bot.set_my_commands(
         [
             BotCommand(command="start", description="Открыть меню завода"),
-            BotCommand(command="panel", description="Открыть панель"),
+            BotCommand(command="addproduct", description="Добавить товар"),
             BotCommand(command="help", description="Инструкция"),
         ]
     )
