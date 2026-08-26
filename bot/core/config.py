@@ -23,5 +23,8 @@ class Settings(BaseSettings):
     seed_supplier_telegram_id: int
     seed_supplier_name: str
 
+    admin_web_login: str = "admin"
+    admin_web_password: str
+
 
 settings = Settings()

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from services.backend.api import analytics, factory, miniapp, stores
+from services.backend.api import analytics, factory, miniapp, stores, web_analytics
 
 app = FastAPI(title="Miramax Bonus API")
 
@@ -16,6 +16,7 @@ app.include_router(analytics.router)
 app.include_router(factory.router)
 app.include_router(miniapp.router)
 app.include_router(stores.router)
+app.include_router(web_analytics.router)
 
 
 @app.get("/health")
