@@ -12,9 +12,14 @@ from core.schemas import (
     OverviewSeriesPoint,
     OverviewTopEntity,
     OverviewTotals,
+    SellerLeaderboardItem,
     StoreAnalytics,
+    StoreLeaderboardItem,
     SupplierAnalytics,
+    WebHomeOut,
+    WebHomeTotals,
 )
+from core.services import directory as directory_service
 
 StoreStats = dict[int, tuple[int, int, datetime | None]]
 
@@ -229,4 +234,106 @@ async def get_factory_overview(
         series=series,
         by_kind=by_kind,
         top=top,
+    )
+
+
+async def get_store_leaderboard(session: AsyncSession) -> list[StoreLeaderboardItem]:
+    """All stores ranked by points issued, descending — feeds both the "Магазины" tab
+    (full list) and the Главная top/bottom highlight (first/last N of this same list)."""
+    stores_result = await session.execute(select(Store))
+    stores = list(stores_result.scalars().all())
+    stats = await _store_stats_map(session, [s.id for s in stores])
+
+    supplier_ids = {s.supplier_id for s in stores}
+    suppliers_by_id: dict[int, Supplier] = {}
+    if supplier_ids:
+        suppliers_result = await session.execute(select(Supplier).where(Supplier.id.in_(supplier_ids)))
+        suppliers_by_id = {s.id: s for s in suppliers_result.scalars().all()}
+
+    items = []
+    for store in stores:
+        count, points, _last_sale_at = stats.get(store.id, (0, 0, None))
+        supplier = suppliers_by_id.get(store.supplier_id)
+        items.append(
+            StoreLeaderboardItem(
+                store_id=store.id,
+                store_name=store.name,
+                city=store.city,
+                supplier_name=supplier.name if supplier else None,
+                sales_count=count,
+                points_issued=points,
+            )
+        )
+    items.sort(key=lambda i: i.points_issued, reverse=True)
+    return items
+
+
+async def get_seller_leaderboard(session: AsyncSession) -> list[SellerLeaderboardItem]:
+    """All sellers ranked by points issued, descending — same shape/use as
+    get_store_leaderboard above, one row per seller instead of per store."""
+    result = await session.execute(
+        select(
+            PointsTransaction.seller_telegram_id,
+            func.count(PointsTransaction.id),
+            func.coalesce(func.sum(PointsTransaction.points), 0),
+        )
+        .where(PointsTransaction.seller_telegram_id.isnot(None))
+        .group_by(PointsTransaction.seller_telegram_id)
+    )
+    stats = {row[0]: (int(row[1]), int(row[2])) for row in result.all()}
+
+    sellers = await directory_service.list_sellers(session)
+    items = []
+    for seller in sellers:
+        count, points = stats.get(seller.telegram_id, (0, 0))
+        name = " ".join(part for part in [seller.first_name, seller.last_name] if part) or None
+        items.append(
+            SellerLeaderboardItem(
+                telegram_id=seller.telegram_id,
+                name=name,
+                store_name=seller.store_name,
+                supplier_name=seller.supplier_name,
+                sales_count=count,
+                points_issued=points,
+            )
+        )
+    items.sort(key=lambda i: i.points_issued, reverse=True)
+    return items
+
+
+def _bottom_slice(ranked: list, highlight_count: int) -> list:
+    """Last `highlight_count` items, excluding whatever the top slice already covers —
+    plain [-n:] would overlap with [:n] once the list is between n+1 and 2n items long."""
+    if len(ranked) <= highlight_count:
+        return []
+    return list(reversed(ranked[max(highlight_count, len(ranked) - highlight_count):]))
+
+
+async def get_web_home(session: AsyncSession, highlight_count: int = 5) -> WebHomeOut:
+    store_count_result = await session.execute(select(func.count(Store.id)))
+    store_count = int(store_count_result.scalar_one() or 0)
+
+    totals_result = await session.execute(
+        select(
+            func.count(PointsTransaction.id),
+            func.coalesce(func.sum(PointsTransaction.amount), 0),
+            func.coalesce(func.sum(PointsTransaction.points), 0),
+        )
+    )
+    total_sales, total_amount, total_points = totals_result.one()
+
+    stores = await get_store_leaderboard(session)
+    sellers = await get_seller_leaderboard(session)
+
+    return WebHomeOut(
+        totals=WebHomeTotals(
+            store_count=store_count,
+            total_sales=int(total_sales or 0),
+            total_amount=float(total_amount or 0),
+            total_points_issued=int(total_points or 0),
+        ),
+        top_stores=stores[:highlight_count],
+        bottom_stores=_bottom_slice(stores, highlight_count),
+        top_sellers=sellers[:highlight_count],
+        bottom_sellers=_bottom_slice(sellers, highlight_count),
     )

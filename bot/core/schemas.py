@@ -220,3 +220,43 @@ class RedemptionOut(BaseModel):
 class RedemptionCreateOut(BaseModel):
     items: list[RedemptionOut]
     total_points: int
+
+
+class WebHomeTotals(BaseModel):
+    store_count: int
+    total_sales: int
+    total_amount: float
+    total_points_issued: int
+
+
+class StoreLeaderboardItem(BaseModel):
+    store_id: int
+    store_name: str
+    city: str | None
+    supplier_name: str | None
+    sales_count: int
+    points_issued: int
+
+
+class SellerLeaderboardItem(BaseModel):
+    telegram_id: int
+    name: str | None
+    store_name: str | None
+    supplier_name: str | None
+    sales_count: int
+    points_issued: int
+
+
+class WebHomeOut(BaseModel):
+    totals: WebHomeTotals
+    top_stores: list[StoreLeaderboardItem]
+    bottom_stores: list[StoreLeaderboardItem]
+    top_sellers: list[SellerLeaderboardItem]
+    bottom_sellers: list[SellerLeaderboardItem]
+
+
+class WebAdminItem(BaseModel):
+    telegram_id: int
+    first_name: str | None
+    last_name: str | None
+    phone: str | None

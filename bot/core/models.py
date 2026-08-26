@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, func
+from sqlalchemy import BigInteger, Boolean, DateTime, Enum, Float, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.db import Base
@@ -94,6 +94,7 @@ class PointsTransaction(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     customer_id: Mapped[int] = mapped_column(ForeignKey("customer_cards.id"), index=True)
     points: Mapped[int] = mapped_column(Integer)
+    amount: Mapped[float | None] = mapped_column(Float, nullable=True)
     reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
     store_id: Mapped[int | None] = mapped_column(ForeignKey("stores.id"), nullable=True)
     seller_telegram_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)

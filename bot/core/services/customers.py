@@ -78,6 +78,7 @@ async def record_sale(
     transaction = PointsTransaction(
         customer_id=customer_id,
         points=points,
+        amount=amount,
         reason=product_name,
         store_id=store_id,
         seller_telegram_id=seller_telegram_id,
