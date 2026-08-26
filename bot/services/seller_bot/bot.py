@@ -10,7 +10,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import BotCommand
 
 from core.config import settings
-from services.seller_bot.handlers import seller, start, supplier
+from services.seller_bot.handlers import issue_points, seller, start, supplier
 from services.seller_bot.middlewares.db import DbSessionMiddleware
 
 
@@ -34,6 +34,7 @@ async def main() -> None:
     dp.include_router(start.router)
     dp.include_router(supplier.router)
     dp.include_router(seller.router)
+    dp.include_router(issue_points.router)
 
     while True:
         session = AiohttpSession(proxy=settings.telegram_proxy_url) if settings.telegram_proxy_url else None

@@ -8,19 +8,20 @@ class AddStoreForm(StatesGroup):
     waiting_store_name = State()
 
 
-class AddClientForm(StatesGroup):
+class IssuePointsForm(StatesGroup):
+    """Выдать баллы — find/register the customer, then pick the sale amount from
+    the tier buttons (composing)."""
+
+    waiting_first_name = State()
+    waiting_last_name = State()
     waiting_phone = State()
-    waiting_name = State()
     choosing_match = State()
-    waiting_amount = State()
+    composing = State()
 
 
-class BalanceLookupForm(StatesGroup):
-    waiting_query = State()
-    choosing_match = State()
+class AddClientForm(StatesGroup):
+    """Добавить клиента — registers a CustomerCard only, no sale/points."""
 
-
-class ExchangeForm(StatesGroup):
-    waiting_query = State()
-    choosing_match = State()
-    listing = State()
+    waiting_first_name = State()
+    waiting_last_name = State()
+    waiting_phone = State()
