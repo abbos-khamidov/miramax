@@ -26,6 +26,21 @@ export function getInitData(): string {
   return "";
 }
 
+const LINK_TOKEN_STORAGE_KEY = "miramax_link_token";
+
+// Primary auth path: the bot sends a plain https:// link with this token embedded
+// (?token=...) instead of relying on Telegram's WebApp bridge, which has proven
+// unreliable on some real devices (initData comes back empty). Read once from the
+// URL on first load, then persist so in-app navigation keeps working.
+export function getLinkToken(): string {
+  const fromUrl = new URLSearchParams(window.location.search).get("token");
+  if (fromUrl) {
+    sessionStorage.setItem(LINK_TOKEN_STORAGE_KEY, fromUrl);
+    return fromUrl;
+  }
+  return sessionStorage.getItem(LINK_TOKEN_STORAGE_KEY) ?? "";
+}
+
 export function initTelegramWebApp() {
   const webApp = window.Telegram?.WebApp;
   webApp?.ready();

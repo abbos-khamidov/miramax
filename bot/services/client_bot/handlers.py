@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from core.models import CustomerCard, InviteTargetRole, PointsTransaction, Product, Redemption, RedemptionStatus, Store
 from core.services import invites as invites_service
+from core.services.link_auth import issue_link_token
 from services.client_bot.i18n import (
     CHOOSE_LANGUAGE_FIRST_RUN,
     DEFAULT_LANG,
@@ -21,8 +22,9 @@ from services.client_bot.keyboards import (
     HISTORY_LABELS,
     INFO_LABELS,
     LANGUAGE_MENU_LABELS,
+    PRIZES_LABELS,
     call_store_keyboard,
-    catalog_webapp_keyboard,
+    catalog_link_keyboard,
     customer_menu,
     language_menu,
 )
@@ -171,9 +173,20 @@ async def menu_command(message: Message, session: AsyncSession) -> None:
     await start_plain(message, session)
 
 
+def _catalog_url(telegram_id: int) -> str:
+    token = issue_link_token(telegram_id)
+    return f"{settings.miniapp_url}?tab=catalog&token={token}"
+
+
+@router.message(F.text.in_(PRIZES_LABELS))
 @router.message(Command("catalog"))
-async def catalog_command(message: Message) -> None:
-    await message.answer("Katalogni Mini App orqali oching.", reply_markup=catalog_webapp_keyboard())
+async def catalog_command(message: Message, session: AsyncSession) -> None:
+    customer = await _get_or_create_customer(session, message)
+    lang = customer.language or DEFAULT_LANG
+    await message.answer(
+        t(lang, "open_catalog_text"),
+        reply_markup=catalog_link_keyboard(lang, _catalog_url(message.from_user.id)),
+    )
 
 
 @router.message(F.text.in_(BALANCE_LABELS))
