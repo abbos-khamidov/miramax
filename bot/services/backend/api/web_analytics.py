@@ -7,7 +7,9 @@ from core.models import Product
 from core.schemas import (
     CityBreakdownItem,
     FactoryOverview,
+    ProductCreate,
     ProductOut,
+    ProductUpdate,
     StoreLeaderboardItem,
     WebAdminItem,
     WebHomeOut,
@@ -75,6 +77,60 @@ async def web_products(
 ) -> list[ProductOut]:
     result = await session.execute(select(Product).order_by(Product.created_at.desc(), Product.id.desc()))
     return list(result.scalars().all())
+
+
+@router.post("/products", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
+async def web_create_product(
+    payload: ProductCreate,
+    session: AsyncSession = Depends(get_db),
+    _auth: None = Depends(require_web_session),
+) -> ProductOut:
+    if payload.points_cost <= 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="points_cost must be positive")
+    product = Product(**payload.model_dump())
+    session.add(product)
+    await session.commit()
+    await session.refresh(product)
+    return product
+
+
+@router.put("/products/{product_id}", response_model=ProductOut)
+async def web_update_product(
+    product_id: int,
+    payload: ProductUpdate,
+    session: AsyncSession = Depends(get_db),
+    _auth: None = Depends(require_web_session),
+) -> ProductOut:
+    result = await session.execute(select(Product).where(Product.id == product_id))
+    product = result.scalar_one_or_none()
+    if product is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="product not found")
+
+    update_data = payload.model_dump(exclude_unset=True)
+    if "points_cost" in update_data and update_data["points_cost"] is not None and update_data["points_cost"] <= 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="points_cost must be positive")
+    for field, value in update_data.items():
+        setattr(product, field, value)
+
+    await session.commit()
+    await session.refresh(product)
+    return product
+
+
+@router.delete("/products/{product_id}", response_model=ProductOut)
+async def web_hide_product(
+    product_id: int,
+    session: AsyncSession = Depends(get_db),
+    _auth: None = Depends(require_web_session),
+) -> ProductOut:
+    result = await session.execute(select(Product).where(Product.id == product_id))
+    product = result.scalar_one_or_none()
+    if product is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="product not found")
+    product.active = False
+    await session.commit()
+    await session.refresh(product)
+    return product
 
 
 @router.get("/cities", response_model=list[CityBreakdownItem])
