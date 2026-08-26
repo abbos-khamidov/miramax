@@ -15,6 +15,15 @@ VIEW_ADMIN_LABELS = all_variants("view_admins")
 VIEW_SUPPLIER_LABELS = all_variants("view_suppliers")
 VIEW_WHOLESALER_LABELS = all_variants("view_wholesalers")
 VIEW_SEARCH_LABELS = all_variants("view_search")
+CHANGE_VALUE_LABELS = all_variants("points_rate_change_value")
+CANCEL_LABELS = all_variants("cancel_action")
+
+
+def points_rate_menu(lang: str) -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[[KeyboardButton(text=t(lang, "points_rate_change_value")), KeyboardButton(text=t(lang, "cancel_action"))]],
+        resize_keyboard=True,
+    )
 
 
 def factory_menu(lang: str) -> ReplyKeyboardMarkup:

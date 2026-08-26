@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.models import CustomerCard, PointsConfig, PointsTransaction, Redemption, RedemptionStatus
 
-DEFAULT_SUM_PER_POINT = 20  # fallback if the points_config row is somehow missing
+DEFAULT_SUM_PER_POINT = 100_000  # fallback if the points_config row is somehow missing
 
 
 async def create_pending_customer(

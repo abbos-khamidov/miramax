@@ -16,7 +16,7 @@ from core.services import roles as roles_service
 from core.services import stores as stores_service
 from core.services import tiers as tiers_service
 from core.services.link_auth import issue_link_token
-from core.services.analytics import get_factory_analytics, get_supplier_purchase_stats
+from core.services.analytics import get_supplier_purchase_stats
 from services.admin_bot.i18n import (
     CHOOSE_LANGUAGE_FIRST_RUN,
     FIRST_RUN_INSTRUCTION,
@@ -29,6 +29,8 @@ from services.admin_bot.keyboards import (
     ADMIN_LABELS,
     ANALYTICS_LABELS,
     BACK_LABELS,
+    CANCEL_LABELS,
+    CHANGE_VALUE_LABELS,
     LANGUAGE_MENU_LABELS,
     ONLINE_SHOWCASE_LABELS,
     POINTS_RATE_LABELS,
@@ -42,6 +44,7 @@ from services.admin_bot.keyboards import (
     entity_list_menu,
     factory_menu,
     language_menu,
+    points_rate_menu,
     view_users_menu,
 )
 from services.admin_bot.states import AddProductForm, AddUserForm, PointsRateForm, ViewUsersForm
@@ -301,29 +304,7 @@ async def factory_analytics(message: Message, session: AsyncSession) -> None:
         await message.answer(t("ru", "no_access"))
         return
     lang = await _lang_for(session, message.from_user.id) or "ru"
-
-    analytics = await get_factory_analytics(session)
-    if not analytics.suppliers:
-        await message.answer(t(lang, "analytics_no_suppliers"))
-        return
-
-    lines = [t(lang, "analytics_header", supplier_count=analytics.supplier_count, store_count=analytics.store_count)]
-    for supplier in analytics.suppliers:
-        lines.append(t(lang, "analytics_supplier_line", supplier_name=supplier.supplier_name, store_count=supplier.store_count))
-        for store in supplier.stores:
-            lines.append(
-                t(
-                    lang,
-                    "analytics_store_line",
-                    store_name=store.store_name,
-                    total_sales=store.total_sales,
-                    total_points_issued=store.total_points_issued,
-                )
-            )
-        if not supplier.stores:
-            lines.append(t(lang, "analytics_store_line_empty"))
-
-    await message.answer("\n".join(lines))
+    await message.answer(t(lang, "analytics_link_text", link=settings.analytics_url))
 
 
 @router.message(F.text.in_(POINTS_RATE_LABELS))
@@ -335,7 +316,23 @@ async def points_rate_start(message: Message, state: FSMContext, session: AsyncS
     current = await customers_service.get_sum_per_point(session)
     await state.update_data(lang=lang)
     await state.set_state(PointsRateForm.waiting_value)
-    await message.answer(t(lang, "points_rate_current", sum_per_point=current))
+    await message.answer(t(lang, "points_rate_current", sum_per_point=current), reply_markup=points_rate_menu(lang))
+
+
+@router.message(PointsRateForm.waiting_value, F.text.in_(CANCEL_LABELS))
+async def points_rate_cancel(message: Message, state: FSMContext) -> None:
+    data = await state.get_data()
+    lang = data.get("lang", "ru")
+    await state.clear()
+    await message.answer(t(lang, "welcome_instruction"), reply_markup=factory_menu(lang))
+
+
+@router.message(PointsRateForm.waiting_value, F.text.in_(CHANGE_VALUE_LABELS))
+async def points_rate_prompt_again(message: Message, state: FSMContext, session: AsyncSession) -> None:
+    data = await state.get_data()
+    lang = data.get("lang", "ru")
+    current = await customers_service.get_sum_per_point(session)
+    await message.answer(t(lang, "points_rate_current", sum_per_point=current), reply_markup=points_rate_menu(lang))
 
 
 @router.message(PointsRateForm.waiting_value)
@@ -348,7 +345,7 @@ async def points_rate_save(message: Message, state: FSMContext, session: AsyncSe
         if value <= 0:
             raise ValueError
     except ValueError:
-        await message.answer(t(lang, "points_rate_invalid"))
+        await message.answer(t(lang, "points_rate_invalid"), reply_markup=points_rate_menu(lang))
         return
 
     await state.clear()

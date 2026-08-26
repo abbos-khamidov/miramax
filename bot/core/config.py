@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     telegram_proxy_url: str | None = None
     miniapp_url: str
     admin_webapp_url: str
+    analytics_url: str = "https://miramaxmpp.uz/analytics/"
     backend_url: str
     store_phone: str = "+998999929292"
 
