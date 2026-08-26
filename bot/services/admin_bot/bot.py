@@ -20,6 +20,8 @@ async def _set_commands(bot: Bot) -> None:
         [
             BotCommand(command="start", description="Открыть меню завода"),
             BotCommand(command="addproduct", description="Добавить товар"),
+            BotCommand(command="set_tier", description="Настроить баллы за сумму"),
+            BotCommand(command="show_tiers", description="Показать суммы и баллы"),
             BotCommand(command="help", description="Инструкция"),
         ]
     )

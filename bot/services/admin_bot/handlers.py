@@ -14,6 +14,7 @@ from core.services import directory as directory_service
 from core.services import invites as invites_service
 from core.services import roles as roles_service
 from core.services import stores as stores_service
+from core.services import tiers as tiers_service
 from core.services.analytics import get_factory_analytics, get_supplier_purchase_stats
 from services.admin_bot.i18n import (
     CHOOSE_LANGUAGE_FIRST_RUN,
@@ -382,6 +383,57 @@ async def online_showcase(message: Message, session: AsyncSession) -> None:
         return
     lang = await _lang_for(session, message.from_user.id) or "ru"
     await message.answer(t(lang, "online_showcase_text", link=settings.miniapp_url))
+
+
+@router.message(Command("set_tier"))
+async def set_tier_cmd(message: Message, command: CommandObject, session: AsyncSession) -> None:
+    if not await _has_factory_access(session, message.from_user.id):
+        await message.answer(t("ru", "no_access"))
+        return
+    lang = await _lang_for(session, message.from_user.id) or "ru"
+
+    parts = (command.args or "").split()
+    if len(parts) != 2:
+        await message.answer(t(lang, "set_tier_usage"))
+        return
+    try:
+        tier, points = int(parts[0]), int(parts[1])
+        if points < 0:
+            raise ValueError
+    except ValueError:
+        await message.answer(t(lang, "set_tier_invalid"))
+        return
+
+    try:
+        config = await tiers_service.set_tier_points(session, tier, points)
+    except tiers_service.TierNotFoundError:
+        await message.answer(t(lang, "set_tier_not_found", tier=f"{tier:,}".replace(",", " ")))
+        return
+
+    await message.answer(
+        t(lang, "set_tier_saved", tier=f"{config.tier:,}".replace(",", " "), points=config.points)
+    )
+
+
+@router.message(Command("show_tiers"))
+async def show_tiers_cmd(message: Message, session: AsyncSession) -> None:
+    if not await _has_factory_access(session, message.from_user.id):
+        await message.answer(t("ru", "no_access"))
+        return
+    lang = await _lang_for(session, message.from_user.id) or "ru"
+
+    tiers = await tiers_service.list_tiers(session)
+    if not tiers:
+        await message.answer(t(lang, "show_tiers_empty"))
+        return
+
+    lines = []
+    for tc in tiers:
+        tier_fmt = f"{tc.tier:,}".replace(",", " ")
+        status = "✅" if tc.active else "⛔️"
+        lines.append(f"{status} {tier_fmt} сум → {tc.points} баллов")
+
+    await message.answer(t(lang, "show_tiers_header") + "\n" + "\n".join(lines))
 
 
 @router.message(Command("addproduct"))
