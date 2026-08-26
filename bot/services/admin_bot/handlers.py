@@ -219,8 +219,15 @@ async def add_user_phone(message: Message, state: FSMContext, session: AsyncSess
         invite, link = await invites_service.create_admin_invite(
             session, first_name=data["first_name"], last_name=data["last_name"], phone=data["phone"]
         )
-        await message.answer(
-            t(
+
+        qr_img = qrcode.make(link)
+        buf = io.BytesIO()
+        qr_img.save(buf, format="PNG")
+        buf.seek(0)
+
+        await message.answer_photo(
+            BufferedInputFile(buf.read(), filename="invite.png"),
+            caption=t(
                 lang,
                 "admin_created",
                 first_name=data["first_name"],
