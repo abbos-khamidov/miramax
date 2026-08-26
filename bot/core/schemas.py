@@ -266,3 +266,16 @@ class CityBreakdownItem(BaseModel):
     city: str
     sales_count: int
     points_issued: int
+
+
+class WebUserItem(BaseModel):
+    id: int | None
+    name: str
+    phone: str | None
+
+
+class WebUsersPage(BaseModel):
+    items: list[WebUserItem]
+    total: int
+    page: int
+    page_size: int

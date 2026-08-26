@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.models import InviteCode, InviteTargetRole, Role, RoleName, Store, Supplier, SupplierKind
+from core.models import CustomerCard, InviteCode, InviteTargetRole, Role, RoleName, Store, Supplier, SupplierKind
 
 
 def _digits(value: str | None) -> str:
@@ -132,3 +132,43 @@ async def list_sellers(session: AsyncSession) -> list[SellerEntry]:
             )
         )
     return entries
+
+
+class WebUserRow:
+    def __init__(self, id: int | None, name: str, phone: str | None):
+        self.id = id
+        self.name = name
+        self.phone = phone
+
+
+async def list_web_users(session: AsyncSession, category: str) -> list[WebUserRow]:
+    """One flat name+phone list per category, for the admin analytics site's
+    Users page — admins/suppliers/wholesalers have no name on Role/Supplier
+    directly for admins (recovered from their invite), suppliers/wholesalers use
+    their own contact fields, clients use CustomerCard directly."""
+    if category == "admin":
+        admins = await list_admins(session)
+        return [
+            WebUserRow(
+                id=a.telegram_id,
+                name=" ".join(part for part in [a.first_name, a.last_name] if part) or "—",
+                phone=a.phone,
+            )
+            for a in admins
+        ]
+    if category in ("supplier", "wholesaler"):
+        kind = SupplierKind.SUPPLIER if category == "supplier" else SupplierKind.WHOLESALER
+        suppliers = await list_suppliers(session, kind)
+        return [
+            WebUserRow(
+                id=s.id,
+                name=" ".join(part for part in [s.contact_first_name, s.contact_last_name] if part) or s.name,
+                phone=s.contact_phone,
+            )
+            for s in suppliers
+        ]
+    if category == "client":
+        result = await session.execute(select(CustomerCard).order_by(CustomerCard.created_at.desc()))
+        customers = list(result.scalars().all())
+        return [WebUserRow(id=c.id, name=c.full_name or "—", phone=c.phone) for c in customers]
+    return []

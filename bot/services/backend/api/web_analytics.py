@@ -11,6 +11,8 @@ from core.schemas import (
     StoreLeaderboardItem,
     WebAdminItem,
     WebHomeOut,
+    WebUserItem,
+    WebUsersPage,
 )
 from core.services import directory as directory_service
 from core.services import web_auth
@@ -93,3 +95,30 @@ async def web_admins(
         WebAdminItem(telegram_id=a.telegram_id, first_name=a.first_name, last_name=a.last_name, phone=a.phone)
         for a in admins
     ]
+
+
+_USER_CATEGORIES = {"admin", "supplier", "wholesaler", "client"}
+
+
+@router.get("/users", response_model=WebUsersPage)
+async def web_users(
+    category: str,
+    page: int = 1,
+    page_size: int = 10,
+    session: AsyncSession = Depends(get_db),
+    _auth: None = Depends(require_web_session),
+) -> WebUsersPage:
+    if category not in _USER_CATEGORIES:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="unknown category")
+    page = max(page, 1)
+    page_size = max(1, min(page_size, 50))
+
+    rows = await directory_service.list_web_users(session, category)
+    start = (page - 1) * page_size
+    page_rows = rows[start : start + page_size]
+    return WebUsersPage(
+        items=[WebUserItem(id=r.id, name=r.name, phone=r.phone) for r in page_rows],
+        total=len(rows),
+        page=page,
+        page_size=page_size,
+    )
