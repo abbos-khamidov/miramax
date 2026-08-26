@@ -70,6 +70,13 @@ def language_menu(cancel_lang: str | None = None) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
 
 
+def bonus_site_keyboard(lang: str, url: str) -> InlineKeyboardMarkup:
+    """A plain https:// link on an inline button — not web_app=, that mechanism has
+    shown Telegram-side open errors on some real devices. Not visible raw text either
+    — the long signed token stays hidden inside the button's url, not printed."""
+    return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=t(lang, "bonus_site_button"), url=url)]])
+
+
 def confirm_new_client_keyboard(lang: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[

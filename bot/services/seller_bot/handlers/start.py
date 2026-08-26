@@ -19,7 +19,13 @@ from services.seller_bot.i18n import (
     LANGUAGE_LABELS,
     t,
 )
-from services.seller_bot.keyboards import BONUS_SITE_LABELS, CANCEL_LABELS, LANGUAGE_MENU_LABELS, language_menu
+from services.seller_bot.keyboards import (
+    BONUS_SITE_LABELS,
+    CANCEL_LABELS,
+    LANGUAGE_MENU_LABELS,
+    bonus_site_keyboard,
+    language_menu,
+)
 
 router = Router(name="supplier_seller_start")
 
@@ -118,7 +124,7 @@ async def bonus_site_button(message: Message, session: AsyncSession) -> None:
     lang = role.language or "ru"
     token = issue_link_token(message.from_user.id)
     link = f"{settings.miniapp_url}?token={token}"
-    await message.answer(t(lang, "bonus_site_text", link=link))
+    await message.answer(t(lang, "bonus_site_text"), reply_markup=bonus_site_keyboard(lang, link))
 
 
 @router.message(F.text.in_(LANGUAGE_MENU_LABELS))
