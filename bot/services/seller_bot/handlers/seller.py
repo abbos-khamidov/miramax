@@ -12,7 +12,7 @@ from core.services import roles as roles_service
 from services.seller_bot.i18n import t
 from services.seller_bot.keyboards import (
     ADD_CLIENT_LABELS,
-    BACK_LABELS,
+    BACK_OR_CANCEL_LABELS,
     INFO_LABELS,
     SUPPORT_LABELS,
     back_menu,
@@ -40,7 +40,7 @@ async def add_client_start(message: Message, state: FSMContext, session: AsyncSe
     await message.answer(t(lang, "ask_client_first_name"), reply_markup=back_menu(lang))
 
 
-@router.message(AddClientForm(), F.text.in_(BACK_LABELS))
+@router.message(AddClientForm(), F.text.in_(BACK_OR_CANCEL_LABELS))
 async def add_client_cancel(message: Message, state: FSMContext, session: AsyncSession) -> None:
     lang = await _lang_for(session, message.from_user.id)
     await state.clear()

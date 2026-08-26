@@ -17,6 +17,8 @@ ADD_CLIENT_LABELS = all_variants("seller_menu_add_client")
 INFO_LABELS = all_variants("seller_menu_info")
 SUPPORT_LABELS = all_variants("seller_menu_support")
 BACK_LABELS = all_variants("submenu_back")
+CANCEL_LABELS = all_variants("cancel_action")
+BACK_OR_CANCEL_LABELS = BACK_LABELS | CANCEL_LABELS
 
 
 def supplier_menu(lang: str) -> ReplyKeyboardMarkup:
@@ -42,14 +44,17 @@ def seller_menu(lang: str) -> ReplyKeyboardMarkup:
 
 
 def back_menu(lang: str) -> ReplyKeyboardMarkup:
-    return ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text=t(lang, "submenu_back"))]], resize_keyboard=True)
+    return ReplyKeyboardMarkup(
+        keyboard=[[KeyboardButton(text=t(lang, "submenu_back")), KeyboardButton(text=t(lang, "cancel_action"))]],
+        resize_keyboard=True,
+    )
 
 
 def match_list_menu(lang: str, labels: list[str], allow_new: bool = False) -> ReplyKeyboardMarkup:
     keyboard = [[KeyboardButton(text=label)] for label in labels]
     if allow_new:
         keyboard.append([KeyboardButton(text=t(lang, "match_create_new"))])
-    keyboard.append([KeyboardButton(text=t(lang, "submenu_back"))])
+    keyboard.append([KeyboardButton(text=t(lang, "submenu_back")), KeyboardButton(text=t(lang, "cancel_action"))])
     return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
 
 

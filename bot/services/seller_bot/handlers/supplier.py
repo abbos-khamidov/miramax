@@ -16,7 +16,7 @@ from services.seller_bot.i18n import t
 from services.seller_bot.keyboards import (
     ADD_STORE_LABELS,
     ANALYTICS_LABELS,
-    BACK_LABELS,
+    BACK_OR_CANCEL_LABELS,
     MY_STORES_LABELS,
     back_menu,
     seller_menu,
@@ -79,7 +79,7 @@ async def add_store_start(message: Message, state: FSMContext, session: AsyncSes
     await message.answer(t(lang, "ask_seller_first_name"), reply_markup=back_menu(lang))
 
 
-@router.message(AddStoreForm(), F.text.in_(BACK_LABELS))
+@router.message(AddStoreForm(), F.text.in_(BACK_OR_CANCEL_LABELS))
 async def add_store_cancel(message: Message, state: FSMContext, session: AsyncSession) -> None:
     data = await state.get_data()
     lang = data.get("lang", "ru")

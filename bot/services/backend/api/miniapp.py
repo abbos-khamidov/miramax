@@ -95,7 +95,6 @@ async def miniapp_me(
 async def list_active_products(
     category: str | None = None,
     session: AsyncSession = Depends(get_db),
-    _user: TelegramUser = Depends(get_telegram_user),
 ) -> list[ProductOut]:
     stmt = select(Product).where(Product.active.is_(True)).order_by(Product.category, Product.name)
     if category:

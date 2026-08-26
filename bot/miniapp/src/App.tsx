@@ -5,6 +5,7 @@ import { Badge } from "./components/ui/badge";
 import { Button } from "./components/ui/button";
 import miramaxLogo from "./assets/miramax-logo.jpg";
 import {
+  ApiError,
   Product,
   Redemption,
   RedemptionStatus,
@@ -68,10 +69,20 @@ export default function App() {
   const [notice, setNotice] = useState<string | null>(null);
 
   async function loadCustomerData() {
-    const [meResult, productsResult, historyResult] = await Promise.all([getMe(), getProducts(), getMyRedemptions()]);
-    setMe(meResult);
+    const productsResult = await getProducts();
     setProducts(productsResult);
-    setHistory(historyResult);
+
+    try {
+      const [meResult, historyResult] = await Promise.all([getMe(), getMyRedemptions()]);
+      setMe(meResult);
+      setHistory(historyResult);
+    } catch (err) {
+      setMe(null);
+      setHistory([]);
+      if (!(err instanceof ApiError) || (err.status !== 401 && err.status !== 403)) {
+        throw err;
+      }
+    }
   }
 
   useEffect(() => {
@@ -147,26 +158,31 @@ export default function App() {
             <img src={miramaxLogo} alt="Miramax" className="h-10 w-10 rounded-lg object-cover" />
             <div>
               <h1 className="text-lg font-semibold leading-tight">Miramax Bonus</h1>
-              <p className="text-xs text-muted-foreground">{me?.full_name ?? "Mijoz"}</p>
+              <p className="text-xs text-muted-foreground">{me?.full_name ?? "Sovg'alar katalogi"}</p>
             </div>
           </div>
-          <div className="rounded-lg bg-primary px-3 py-2 text-right text-primary-foreground">
+          {me ? <div className="rounded-lg bg-primary px-3 py-2 text-right text-primary-foreground">
             <p className="text-[11px] leading-none opacity-80">Balans</p>
-            <p className="text-base font-semibold">{formatPoints(me?.balance ?? 0)}</p>
-          </div>
+            <p className="text-base font-semibold">{formatPoints(me.balance)}</p>
+          </div> : <div className="rounded-lg border bg-card px-3 py-2 text-right">
+            <p className="text-[11px] leading-none text-muted-foreground">Prizlar</p>
+            <p className="text-base font-semibold">{products.length}</p>
+          </div>}
         </div>
       </header>
 
       <main className="flex-1 px-4 pb-24 pt-4">
         {error && <Alert text={error} tone="error" />}
         {notice && <Alert text={notice} tone="ok" />}
-        {tab === "new" && <NewArrivals products={newArrivals} cart={cart} onAdd={addToCart} onRemove={removeFromCart} />}
+        {!me && <Alert text="Ballarni almashtirish uchun bot yuborgan shaxsiy havola orqali kiring." tone="ok" />}
+        {tab === "new" && <NewArrivals products={newArrivals} cart={cart} canRedeem={me !== null} onAdd={addToCart} onRemove={removeFromCart} />}
         {tab === "catalog" && (
           <Catalog
             products={visibleProducts}
             categories={categories}
             category={category}
             cart={cart}
+            canRedeem={me !== null}
             onCategoryChange={setCategory}
             onAdd={addToCart}
             onRemove={removeFromCart}
@@ -191,8 +207,8 @@ export default function App() {
         <div className={me?.is_admin ? "grid grid-cols-5 gap-2" : "grid grid-cols-4 gap-2"}>
           <NavButton active={tab === "new"} icon={<Sparkles />} label="Yangiliklar" onClick={() => setTab("new")} />
           <NavButton active={tab === "catalog"} icon={<Gift />} label="Sovg'alar" onClick={() => setTab("catalog")} />
-          <NavButton active={tab === "cart"} icon={<ShoppingCart />} label={`Savatcha${cartItems.length ? ` (${cartItems.length})` : ""}`} onClick={() => setTab("cart")} />
-          <NavButton active={tab === "history"} icon={<History />} label="Tarix" onClick={() => setTab("history")} />
+          {me && <NavButton active={tab === "cart"} icon={<ShoppingCart />} label={`Savatcha${cartItems.length ? ` (${cartItems.length})` : ""}`} onClick={() => setTab("cart")} />}
+          {me && <NavButton active={tab === "history"} icon={<History />} label="Tarix" onClick={() => setTab("history")} />}
           {me?.is_admin && (
             <NavButton active={tab === "admin"} icon={<Settings />} label="Admin" onClick={() => setTab("admin")} />
           )}
@@ -223,6 +239,7 @@ function Catalog(props: {
   categories: string[];
   category: string;
   cart: Cart;
+  canRedeem: boolean;
   onCategoryChange: (category: string) => void;
   onAdd: (productId: number) => void;
   onRemove: (productId: number) => void;
@@ -241,20 +258,20 @@ function Catalog(props: {
         ))}
       </div>
 
-      <div className="grid gap-3">
+      <div className="grid grid-cols-2 gap-3">
         {props.products.map((product) => {
           const qty = props.cart[product.id] ?? 0;
           return (
-            <article key={product.id} className="grid grid-cols-[72px_1fr_auto] items-center gap-3 rounded-lg border bg-card p-3">
-              <div className="flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-lg bg-secondary text-secondary-foreground">
+            <article key={product.id} className="overflow-hidden rounded-lg border bg-card">
+              <div className="flex aspect-square items-center justify-center overflow-hidden bg-secondary text-secondary-foreground">
                 {productVisual(product)}
               </div>
-              <div className="min-w-0">
+              <div className="space-y-2 p-3">
                 <Badge variant="secondary" className="mb-2">{product.category}</Badge>
-                <h2 className="truncate text-base font-semibold">{product.name}</h2>
-                <p className="text-sm text-muted-foreground">{formatPoints(product.points_cost)} ball</p>
+                <h2 className="min-h-10 text-sm font-semibold leading-tight">{product.name}</h2>
+                <p className="text-sm font-semibold text-primary">{formatPoints(product.points_cost)} ball</p>
+                {props.canRedeem && <Stepper qty={qty} onAdd={() => props.onAdd(product.id)} onRemove={() => props.onRemove(product.id)} />}
               </div>
-              <Stepper qty={qty} onAdd={() => props.onAdd(product.id)} onRemove={() => props.onRemove(product.id)} />
             </article>
           );
         })}
@@ -267,26 +284,27 @@ function Catalog(props: {
 function NewArrivals(props: {
   products: Product[];
   cart: Cart;
+  canRedeem: boolean;
   onAdd: (productId: number) => void;
   onRemove: (productId: number) => void;
 }) {
   return (
     <section className="space-y-4">
       <p className="text-sm text-muted-foreground">So'nggi qo'shilgan sovg'alar.</p>
-      <div className="grid gap-3">
+      <div className="grid grid-cols-2 gap-3">
         {props.products.map((product) => {
           const qty = props.cart[product.id] ?? 0;
           return (
-            <article key={product.id} className="grid grid-cols-[72px_1fr_auto] items-center gap-3 rounded-lg border bg-card p-3">
-              <div className="flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-lg bg-secondary text-secondary-foreground">
+            <article key={product.id} className="overflow-hidden rounded-lg border bg-card">
+              <div className="flex aspect-square items-center justify-center overflow-hidden bg-secondary text-secondary-foreground">
                 {productVisual(product)}
               </div>
-              <div className="min-w-0">
+              <div className="space-y-2 p-3">
                 <Badge variant="secondary" className="mb-2">Yangi</Badge>
-                <h2 className="truncate text-base font-semibold">{product.name}</h2>
-                <p className="text-sm text-muted-foreground">{formatPoints(product.points_cost)} ball</p>
+                <h2 className="min-h-10 text-sm font-semibold leading-tight">{product.name}</h2>
+                <p className="text-sm font-semibold text-primary">{formatPoints(product.points_cost)} ball</p>
+                {props.canRedeem && <Stepper qty={qty} onAdd={() => props.onAdd(product.id)} onRemove={() => props.onRemove(product.id)} />}
               </div>
-              <Stepper qty={qty} onAdd={() => props.onAdd(product.id)} onRemove={() => props.onRemove(product.id)} />
             </article>
           );
         })}

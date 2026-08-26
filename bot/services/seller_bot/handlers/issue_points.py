@@ -14,7 +14,7 @@ from core.services import tiers as tiers_service
 from core.services.notifications import notify_customer
 from services.seller_bot.i18n import t
 from services.seller_bot.keyboards import (
-    BACK_LABELS,
+    BACK_OR_CANCEL_LABELS,
     ISSUE_POINTS_LABELS,
     back_menu,
     confirm_new_client_keyboard,
@@ -56,7 +56,7 @@ async def issue_points_start(message: Message, state: FSMContext, session: Async
     await message.answer(t(lang, "ask_client_first_name"), reply_markup=back_menu(lang))
 
 
-@router.message(IssuePointsForm(), F.text.in_(BACK_LABELS))
+@router.message(IssuePointsForm(), F.text.in_(BACK_OR_CANCEL_LABELS))
 async def issue_points_cancel(message: Message, state: FSMContext, session: AsyncSession) -> None:
     lang = await _lang_for(session, message.from_user.id)
     await state.clear()

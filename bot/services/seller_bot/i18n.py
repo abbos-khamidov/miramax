@@ -95,6 +95,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "tier_not_configured_button": "⚠️ Баллы не настроены",
         "tier_sale_confirmed": "Начислено {points} баллов покупателю «{name}».",
         "submenu_back": "⬅️ Назад",
+        "cancel_action": "❌ Отменить действие",
         "info_text": (
             "<b>Как пользоваться ботом Miramax Bonus</b>\n\n"
             "<b>💳 Выдать баллы</b> — главное действие. Вводите имя, фамилию и телефон покупателя. "
@@ -175,6 +176,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "tier_not_configured_button": "⚠️ Ball sozlanmagan",
         "tier_sale_confirmed": "«{name}» xaridoriga {points} ball qo'shildi.",
         "submenu_back": "⬅️ Orqaga",
+        "cancel_action": "❌ Amalni bekor qilish",
         "info_text": (
             "<b>Miramax Bonus botidan qanday foydalanish</b>\n\n"
             "<b>💳 Ball berish</b> — asosiy amal. Xaridorning ismi, familiyasi va telefonini kiritasiz. "
@@ -255,6 +257,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "tier_not_configured_button": "⚠️ Puan ayarlanmadı",
         "tier_sale_confirmed": "«{name}» müşterisine {points} puan yüklendi.",
         "submenu_back": "⬅️ Geri",
+        "cancel_action": "❌ İşlemi iptal et",
         "info_text": (
             "<b>Miramax Bonus botu nasıl kullanılır</b>\n\n"
             "<b>💳 Puan ver</b> — ana işlem. Müşterinin adını, soyadını ve telefonunu girin. Bu müşteri "
