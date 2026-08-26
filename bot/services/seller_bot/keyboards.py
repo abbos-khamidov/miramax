@@ -3,8 +3,10 @@ from aiogram.types import (
     InlineKeyboardMarkup,
     KeyboardButton,
     ReplyKeyboardMarkup,
+    WebAppInfo,
 )
 
+from core.config import settings
 from services.seller_bot.i18n import LANGUAGE_LABELS, all_variants, t
 
 MY_STORES_LABELS = all_variants("menu_my_stores")
@@ -19,13 +21,17 @@ SUPPORT_LABELS = all_variants("seller_menu_support")
 BACK_LABELS = all_variants("submenu_back")
 CANCEL_LABELS = all_variants("cancel_action")
 BACK_OR_CANCEL_LABELS = BACK_LABELS | CANCEL_LABELS
-BONUS_SITE_LABELS = all_variants("menu_bonus_site")
+
+
+def _bonus_site_button(lang: str) -> KeyboardButton:
+    # WebApp button, one tap, same mechanism as admin_bot's "Открыть аналитику".
+    return KeyboardButton(text=t(lang, "menu_bonus_site"), web_app=WebAppInfo(url=settings.miniapp_url))
 
 
 def supplier_menu(lang: str) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=t(lang, "menu_bonus_site"))],
+            [_bonus_site_button(lang)],
             [KeyboardButton(text=t(lang, "menu_my_stores")), KeyboardButton(text=t(lang, "menu_add_store"))],
             [KeyboardButton(text=t(lang, "menu_analytics")), KeyboardButton(text=t(lang, "menu_language"))],
         ],
@@ -36,7 +42,7 @@ def supplier_menu(lang: str) -> ReplyKeyboardMarkup:
 def seller_menu(lang: str) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=t(lang, "menu_bonus_site"))],
+            [_bonus_site_button(lang)],
             [KeyboardButton(text=t(lang, "seller_menu_issue_points"))],
             [KeyboardButton(text=t(lang, "menu_add_store")), KeyboardButton(text=t(lang, "seller_menu_add_client"))],
             [KeyboardButton(text=t(lang, "seller_menu_info")), KeyboardButton(text=t(lang, "seller_menu_support"))],
@@ -68,13 +74,6 @@ def language_menu(cancel_lang: str | None = None) -> ReplyKeyboardMarkup:
     if cancel_lang is not None:
         keyboard.append([KeyboardButton(text=t(cancel_lang, "cancel_action"))])
     return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
-
-
-def bonus_site_keyboard(lang: str, url: str) -> InlineKeyboardMarkup:
-    """A plain https:// link on an inline button — not web_app=, that mechanism has
-    shown Telegram-side open errors on some real devices. Not visible raw text either
-    — the long signed token stays hidden inside the button's url, not printed."""
-    return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=t(lang, "bonus_site_button"), url=url)]])
 
 
 def confirm_new_client_keyboard(lang: str) -> InlineKeyboardMarkup:

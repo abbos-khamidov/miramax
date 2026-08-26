@@ -3,8 +3,10 @@ from aiogram.types import (
     InlineKeyboardMarkup,
     KeyboardButton,
     ReplyKeyboardMarkup,
+    WebAppInfo,
 )
 
+from core.config import settings
 from services.client_bot.i18n import LANGUAGE_LABELS, all_variants, t
 
 BALANCE_LABELS = all_variants("menu_balance")
@@ -18,7 +20,8 @@ LANGUAGE_MENU_LABELS = all_variants("menu_language")
 def customer_menu(lang: str) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=t(lang, "menu_prizes"))],
+            # WebApp button, one tap — same mechanism as admin_bot's analytics button.
+            [KeyboardButton(text=t(lang, "menu_prizes"), web_app=WebAppInfo(url=f"{settings.miniapp_url}?tab=catalog"))],
             [KeyboardButton(text=t(lang, "menu_balance")), KeyboardButton(text=t(lang, "menu_history"))],
             [KeyboardButton(text=t(lang, "menu_call_store")), KeyboardButton(text=t(lang, "menu_info"))],
             [KeyboardButton(text=t(lang, "menu_language"))],
