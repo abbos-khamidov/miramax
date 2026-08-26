@@ -99,6 +99,12 @@ async def _send_menu(message: Message, session: AsyncSession, customer: Customer
     balance = await _customer_balance(session, customer.id)
     text = t(lang, "start_greeting") + "\n\n" + t(lang, "balance_label", balance=_points(balance))
     await message.answer(text, reply_markup=customer_menu(lang))
+    # Catalog link sent right away, inline — opens in one tap like a normal WebApp
+    # button, no extra round-trip through the bot to ask for it first.
+    await message.answer(
+        t(lang, "open_catalog_text"),
+        reply_markup=catalog_link_keyboard(lang, _catalog_url(customer.telegram_id)),
+    )
 
 
 @router.message(CommandStart(deep_link=True))
