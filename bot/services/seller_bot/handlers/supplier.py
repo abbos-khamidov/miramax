@@ -113,8 +113,15 @@ async def add_store_city(message: Message, state: FSMContext) -> None:
 
 
 @router.message(AddStoreForm.waiting_store_name)
-async def add_store_name(message: Message, state: FSMContext, session: AsyncSession) -> None:
+async def add_store_name(message: Message, state: FSMContext) -> None:
     data = await state.update_data(store_name=message.text)
+    await state.set_state(AddStoreForm.waiting_store_phone)
+    await message.answer(t(data["lang"], "ask_store_phone"), reply_markup=back_menu(data["lang"]))
+
+
+@router.message(AddStoreForm.waiting_store_phone)
+async def add_store_phone(message: Message, state: FSMContext, session: AsyncSession) -> None:
+    data = await state.update_data(store_phone=message.text)
     await state.clear()
     lang = data["lang"]
 
@@ -123,7 +130,9 @@ async def add_store_name(message: Message, state: FSMContext, session: AsyncSess
         await message.answer(t(lang, "no_supplier_link"))
         return
 
-    store = await stores_service.create_store(session, supplier_id, data["store_name"], None, data["city"])
+    store = await stores_service.create_store(
+        session, supplier_id, data["store_name"], None, data["city"], phone=data["store_phone"]
+    )
     invite, link = await invites_service.create_seller_invite(
         session, store.id, first_name=data["first_name"], last_name=data["last_name"]
     )

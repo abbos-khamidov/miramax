@@ -204,9 +204,15 @@ async def balance_command(message: Message, session: AsyncSession) -> None:
 async def call_store_button(message: Message, session: AsyncSession) -> None:
     customer = await _get_or_create_customer(session, message)
     lang = customer.language or DEFAULT_LANG
+
+    store = await session.get(Store, customer.store_id) if customer.store_id else None
+    phone = (store.phone if store else None) or settings.store_phone
+    text_key = "call_store_text_named" if store else "call_store_text"
+    text_kwargs = {"phone": phone, "store_name": store.name} if store else {"phone": phone}
+
     await message.answer(
-        t(lang, "call_store_text", phone=settings.store_phone),
-        reply_markup=call_store_keyboard(lang),
+        t(lang, text_key, **text_kwargs),
+        reply_markup=call_store_keyboard(lang, phone),
     )
 
 

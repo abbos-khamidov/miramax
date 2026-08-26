@@ -125,7 +125,10 @@ async def issue_points_phone(message: Message, state: FSMContext, session: Async
 async def confirm_new_client_yes(callback: CallbackQuery, state: FSMContext, session: AsyncSession) -> None:
     data = await state.get_data()
     full_name = " ".join(part for part in [data["first_name"], data["last_name"]] if part)
-    customer = await customers_service.create_pending_customer(session, first_name=full_name, phone=data["phone"])
+    role = await roles_service.get_role_by_telegram_id(session, callback.from_user.id)
+    customer = await customers_service.create_pending_customer(
+        session, first_name=full_name, phone=data["phone"], store_id=role.store_id if role else None
+    )
     await state.update_data(customer_id=customer.id, is_new=True)
     await callback.message.edit_reply_markup(reply_markup=None)
     await callback.answer()
@@ -149,7 +152,10 @@ async def issue_points_choose_match(message: Message, state: FSMContext, session
 
     if message.text == t(lang, "match_create_new"):
         full_name = " ".join(part for part in [data["first_name"], data["last_name"]] if part)
-        customer = await customers_service.create_pending_customer(session, first_name=full_name, phone=data["phone"])
+        role = await roles_service.get_role_by_telegram_id(session, message.from_user.id)
+        customer = await customers_service.create_pending_customer(
+            session, first_name=full_name, phone=data["phone"], store_id=role.store_id if role else None
+        )
         await state.update_data(customer_id=customer.id, is_new=True)
     else:
         customer_id = data.get("match_map", {}).get(message.text)

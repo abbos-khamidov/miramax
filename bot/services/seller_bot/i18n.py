@@ -57,6 +57,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ask_seller_last_name": "Фамилия?",
         "ask_city": "Город?",
         "ask_store_name": "Название магазина?",
+        "ask_store_phone": "Телефон магазина (для кнопки «Позвонить в магазин» у клиентов)?",
         "store_created": (
             "Магазин «{store_name}» ({city}) добавлен.\n"
             "Продавец: {first_name} {last_name}.\n\n"
@@ -137,6 +138,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ask_seller_last_name": "Familiyasi?",
         "ask_city": "Shahar?",
         "ask_store_name": "Do'kon nomi?",
+        "ask_store_phone": "Do'kon telefon raqami (mijozlar uchun «Do'konga qo'ng'iroq» tugmasi)?",
         "store_created": (
             "«{store_name}» ({city}) do'koni qo'shildi.\n"
             "Sotuvchi: {first_name} {last_name}.\n\n"
@@ -216,6 +218,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ask_seller_last_name": "Soyadı?",
         "ask_city": "Şehir?",
         "ask_store_name": "Mağaza adı?",
+        "ask_store_phone": "Mağaza telefon numarası (müşteriler için «Mağazayı ara» butonu)?",
         "store_created": (
             "«{store_name}» ({city}) mağazası eklendi.\n"
             "Satıcı: {first_name} {last_name}.\n\n"

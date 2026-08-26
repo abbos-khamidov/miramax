@@ -69,9 +69,13 @@ async def add_client_phone(message: Message, state: FSMContext, session: AsyncSe
 
     full_name = " ".join(part for part in [data["first_name"], data["last_name"]] if part)
     existing = await customers_service.search_customers(session, data["phone"], limit=1)
-    customer = existing[0] if existing else await customers_service.create_pending_customer(
-        session, first_name=full_name, phone=data["phone"]
-    )
+    if existing:
+        customer = existing[0]
+    else:
+        role = await roles_service.get_role_by_telegram_id(session, message.from_user.id)
+        customer = await customers_service.create_pending_customer(
+            session, first_name=full_name, phone=data["phone"], store_id=role.store_id if role else None
+        )
 
     await message.answer(
         t(lang, "client_registered", name=customer.full_name or full_name),

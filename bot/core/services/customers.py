@@ -6,10 +6,14 @@ from core.models import CustomerCard, PointsConfig, PointsTransaction, Redemptio
 DEFAULT_SUM_PER_POINT = 20  # fallback if the points_config row is somehow missing
 
 
-async def create_pending_customer(session: AsyncSession, first_name: str, phone: str) -> CustomerCard:
+async def create_pending_customer(
+    session: AsyncSession, first_name: str, phone: str, store_id: int | None = None
+) -> CustomerCard:
     """A seller registers a customer who has never opened the customer bot yet —
-    no telegram_id until they redeem the invite QR generated right after this."""
-    customer = CustomerCard(full_name=first_name, phone=phone)
+    no telegram_id until they redeem the invite QR generated right after this.
+    store_id binds them to whichever store's seller registered them — this is a
+    one-time binding, never reassigned later even if a different store serves them."""
+    customer = CustomerCard(full_name=first_name, phone=phone, store_id=store_id)
     session.add(customer)
     await session.commit()
     await session.refresh(customer)

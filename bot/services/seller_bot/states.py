@@ -6,6 +6,7 @@ class AddStoreForm(StatesGroup):
     waiting_last_name = State()
     waiting_city = State()
     waiting_store_name = State()
+    waiting_store_phone = State()
 
 
 class IssuePointsForm(StatesGroup):

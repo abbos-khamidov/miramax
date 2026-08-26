@@ -4,8 +4,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.models import Store
 
 
-async def create_store(session: AsyncSession, supplier_id: int, name: str, address: str | None, city: str | None) -> Store:
-    store = Store(supplier_id=supplier_id, name=name, address=address, city=city)
+async def create_store(
+    session: AsyncSession,
+    supplier_id: int,
+    name: str,
+    address: str | None,
+    city: str | None,
+    phone: str | None = None,
+) -> Store:
+    store = Store(supplier_id=supplier_id, name=name, address=address, city=city, phone=phone)
     session.add(store)
     await session.commit()
     await session.refresh(store)
@@ -13,7 +20,12 @@ async def create_store(session: AsyncSession, supplier_id: int, name: str, addre
 
 
 async def update_store(
-    session: AsyncSession, store_id: int, name: str | None, address: str | None, city: str | None
+    session: AsyncSession,
+    store_id: int,
+    name: str | None,
+    address: str | None,
+    city: str | None,
+    phone: str | None = None,
 ) -> Store | None:
     store = await session.get(Store, store_id)
     if store is None:
@@ -24,6 +36,8 @@ async def update_store(
         store.address = address
     if city is not None:
         store.city = city
+    if phone is not None:
+        store.phone = phone
     await session.commit()
     await session.refresh(store)
     return store
