@@ -16,6 +16,7 @@ class IssuePointsForm(StatesGroup):
     waiting_last_name = State()
     waiting_phone = State()
     choosing_match = State()
+    confirming_new = State()
     composing = State()
 
 

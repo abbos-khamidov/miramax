@@ -60,6 +60,17 @@ def language_menu() -> ReplyKeyboardMarkup:
     )
 
 
+def confirm_new_client_keyboard(lang: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text=t(lang, "confirm_yes"), callback_data="new_client_yes"),
+                InlineKeyboardButton(text=t(lang, "confirm_no"), callback_data="new_client_no"),
+            ]
+        ]
+    )
+
+
 def tier_composer_keyboard(lang: str, tiers: dict[int, int], cart: dict[int, int]) -> InlineKeyboardMarkup:
     """One coupon-style button per active tier (номинал), showing ×N once tapped,
     plus a confirm/reset row once something is in the cart."""

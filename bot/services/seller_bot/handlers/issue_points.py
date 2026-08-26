@@ -17,6 +17,7 @@ from services.seller_bot.keyboards import (
     BACK_LABELS,
     ISSUE_POINTS_LABELS,
     back_menu,
+    confirm_new_client_keyboard,
     match_list_menu,
     seller_menu,
     tier_composer_keyboard,
@@ -76,13 +77,27 @@ async def issue_points_last_name(message: Message, state: FSMContext) -> None:
     await message.answer(t(data["lang"], "ask_client_phone"), reply_markup=back_menu(data["lang"]))
 
 
+def _compose_text(lang: str, cart: dict[int, int]) -> str:
+    lines = [t(lang, "tier_compose_header")]
+    if cart:
+        lines.append("")
+        total_amount = 0
+        for tier in sorted(cart):
+            qty = cart[tier]
+            total_amount += tier * qty
+            lines.append(t(lang, "tier_compose_line", tier=f"{tier:,}".replace(",", " "), qty=qty))
+        lines.append("")
+        lines.append(t(lang, "tier_compose_total", amount=f"{total_amount:,}".replace(",", " ")))
+    return "\n".join(lines)
+
+
 async def _start_composing(message: Message, state: FSMContext, session: AsyncSession) -> None:
     data = await state.get_data()
     lang = data["lang"]
     tiers = await tiers_service.load_tiers(session)
     await state.update_data(cart={})
     await state.set_state(IssuePointsForm.composing)
-    await message.answer(t(lang, "tier_compose_header"), reply_markup=tier_composer_keyboard(lang, tiers, {}))
+    await message.answer(_compose_text(lang, {}), reply_markup=tier_composer_keyboard(lang, tiers, {}))
 
 
 @router.message(IssuePointsForm.waiting_phone)
@@ -102,10 +117,29 @@ async def issue_points_phone(message: Message, state: FSMContext, session: Async
         await message.answer(t(lang, "match_list_header"), reply_markup=match_list_menu(lang, labels, allow_new=True))
         return
 
+    await state.set_state(IssuePointsForm.confirming_new)
+    await message.answer(t(lang, "client_not_found_confirm"), reply_markup=confirm_new_client_keyboard(lang))
+
+
+@router.callback_query(IssuePointsForm.confirming_new, F.data == "new_client_yes")
+async def confirm_new_client_yes(callback: CallbackQuery, state: FSMContext, session: AsyncSession) -> None:
+    data = await state.get_data()
     full_name = " ".join(part for part in [data["first_name"], data["last_name"]] if part)
     customer = await customers_service.create_pending_customer(session, first_name=full_name, phone=data["phone"])
     await state.update_data(customer_id=customer.id, is_new=True)
-    await _start_composing(message, state, session)
+    await callback.message.edit_reply_markup(reply_markup=None)
+    await callback.answer()
+    await _start_composing(callback.message, state, session)
+
+
+@router.callback_query(IssuePointsForm.confirming_new, F.data == "new_client_no")
+async def confirm_new_client_no(callback: CallbackQuery, state: FSMContext, session: AsyncSession) -> None:
+    data = await state.get_data()
+    lang = data["lang"]
+    await state.clear()
+    await callback.message.edit_reply_markup(reply_markup=None)
+    await callback.answer()
+    await callback.message.answer(t(lang, "help_seller"), reply_markup=seller_menu(lang))
 
 
 @router.message(IssuePointsForm.choosing_match)
@@ -136,7 +170,7 @@ async def tier_tap(callback: CallbackQuery, state: FSMContext, session: AsyncSes
     await state.update_data(cart=cart)
 
     tiers = await tiers_service.load_tiers(session)
-    await callback.message.edit_reply_markup(reply_markup=tier_composer_keyboard(lang, tiers, cart))
+    await callback.message.edit_text(_compose_text(lang, cart), reply_markup=tier_composer_keyboard(lang, tiers, cart))
     await callback.answer()
 
 
@@ -147,7 +181,7 @@ async def tier_reset(callback: CallbackQuery, state: FSMContext, session: AsyncS
     await state.update_data(cart={})
 
     tiers = await tiers_service.load_tiers(session)
-    await callback.message.edit_reply_markup(reply_markup=tier_composer_keyboard(lang, tiers, {}))
+    await callback.message.edit_text(_compose_text(lang, {}), reply_markup=tier_composer_keyboard(lang, tiers, {}))
     await callback.answer()
 
 
