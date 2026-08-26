@@ -15,7 +15,6 @@ from core.services import invites as invites_service
 from core.services import roles as roles_service
 from core.services import stores as stores_service
 from core.services import tiers as tiers_service
-from core.services.link_auth import issue_link_token
 from core.services.analytics import get_supplier_purchase_stats
 from services.admin_bot.i18n import (
     CHOOSE_LANGUAGE_FIRST_RUN,
@@ -374,9 +373,7 @@ async def online_showcase(message: Message, session: AsyncSession) -> None:
         await message.answer(t("ru", "no_access"))
         return
     lang = await _lang_for(session, message.from_user.id) or "ru"
-    token = issue_link_token(message.from_user.id)
-    link = f"{settings.miniapp_url}?token={token}"
-    await message.answer(t(lang, "online_showcase_text", link=link))
+    await message.answer(t(lang, "online_showcase_pending"))
 
 
 @router.message(Command("set_tier"))
