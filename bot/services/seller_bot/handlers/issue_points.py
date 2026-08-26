@@ -9,9 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.models import CustomerCard
 from core.services import customers as customers_service
 from core.services import invites as invites_service
+from core.services import roles as roles_service
 from core.services import tiers as tiers_service
 from core.services.notifications import notify_customer
-from services.seller_bot.access import get_effective_role
 from services.seller_bot.i18n import t
 from services.seller_bot.keyboards import (
     BACK_LABELS,
@@ -30,7 +30,7 @@ MATCH_LIMIT = 6
 
 
 async def _lang_for(session: AsyncSession, telegram_id: int) -> str:
-    role = await get_effective_role(session, telegram_id)
+    role = await roles_service.get_role_by_telegram_id(session, telegram_id)
     return (role.language if role else None) or "ru"
 
 
@@ -197,7 +197,7 @@ async def tier_confirm(callback: CallbackQuery, state: FSMContext, session: Asyn
         await callback.answer(t(lang, "tier_not_configured"), show_alert=True)
         return
 
-    role = await get_effective_role(session, callback.from_user.id)
+    role = await roles_service.get_role_by_telegram_id(session, callback.from_user.id)
     if role is None or role.store_id is None:
         await callback.answer(t(lang, "no_store_link"), show_alert=True)
         return

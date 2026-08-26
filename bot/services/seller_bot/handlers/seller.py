@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.services import customers as customers_service
 from core.services import invites as invites_service
-from services.seller_bot.access import get_effective_role
+from core.services import roles as roles_service
 from services.seller_bot.i18n import t
 from services.seller_bot.keyboards import (
     ADD_CLIENT_LABELS,
@@ -24,7 +24,7 @@ router = Router(name="seller")
 
 
 async def _lang_for(session: AsyncSession, telegram_id: int) -> str:
-    role = await get_effective_role(session, telegram_id)
+    role = await roles_service.get_role_by_telegram_id(session, telegram_id)
     return (role.language if role else None) or "ru"
 
 
