@@ -11,6 +11,7 @@ from aiogram.types import BotCommand
 
 from core.config import settings
 from services.client_bot import handlers
+from services.client_bot.i18n import PROFILE_DESCRIPTIONS, PROFILE_SHORT_DESCRIPTIONS
 from services.client_bot.middlewares.db import DbSessionMiddleware
 
 
@@ -27,6 +28,16 @@ async def _set_commands(bot: Bot) -> None:
             BotCommand(command="help", description="Yordam"),
         ]
     )
+
+
+async def _set_profile_texts(bot: Bot) -> None:
+    """Sets the text shown before a user even presses Start (empty-chat description +
+    profile short description), per Telegram client language_code. The bot's avatar
+    photo has no Bot API equivalent — that stays a manual @BotFather /setuserpic step."""
+    for language_code, description in PROFILE_DESCRIPTIONS.items():
+        await bot.set_my_description(description=description, language_code=language_code)
+    for language_code, short_description in PROFILE_SHORT_DESCRIPTIONS.items():
+        await bot.set_my_short_description(short_description=short_description, language_code=language_code)
 
 
 async def main() -> None:
@@ -49,6 +60,7 @@ async def main() -> None:
         try:
             await bot.delete_webhook(drop_pending_updates=True, request_timeout=120)
             await _set_commands(bot)
+            await _set_profile_texts(bot)
             await dp.start_polling(bot)
             break
         except TelegramNetworkError as exc:

@@ -10,6 +10,30 @@ LANGUAGE_CODE_BY_LABEL = {label: code for code, label in LANGUAGE_LABELS.items()
 
 CHOOSE_LANGUAGE_FIRST_RUN = "Выберите язык интерфейса:\nTilni tanlang:\nDil seçin:"
 
+# Shown before a user even presses Start (empty-chat description + profile short
+# description), per Telegram client language_code — see client_bot/bot.py:_set_profile_texts.
+PROFILE_DESCRIPTIONS: dict[str | None, str] = {
+    None: (
+        "Miramax Bonus — do'kon sodiqlik dasturi. Xaridlar uchun ball to'plang va "
+        "ularni tovarlarga almashtiring.\n\nBoshlash uchun /start ni bosing."
+    ),
+    "ru": (
+        "Miramax Bonus — бонусная программа магазина. Копите баллы за покупки и "
+        "обменивайте их на товары.\n\nНажмите /start, чтобы начать."
+    ),
+    "tr": (
+        "Miramax Bonus — mağaza sadakat programı. Alışverişlerden puan biriktirin ve "
+        "ürünlerle takas edin.\n\nBaşlamak için /start yazın."
+    ),
+}
+
+PROFILE_SHORT_DESCRIPTIONS: dict[str | None, str] = {
+    None: "Miramax Bonus — xaridlar uchun ball. Boshlash uchun /start ni bosing.",
+    "ru": "Miramax Bonus — баллы за покупки. Нажмите /start, чтобы начать.",
+    "tr": "Miramax Bonus — alışverişlerden puan. Başlamak için /start yazın.",
+    "en": "Miramax Bonus loyalty program. Send /start to begin.",
+}
+
 TRANSLATIONS: dict[str, dict[str, str]] = {
     "ru": {
         "choose_language": "Выберите язык интерфейса:",
