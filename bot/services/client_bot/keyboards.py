@@ -10,10 +10,9 @@ from core.config import settings
 from services.client_bot.i18n import LANGUAGE_LABELS, all_variants, t
 
 BALANCE_LABELS = all_variants("menu_balance")
-PRODUCTS_LABELS = all_variants("menu_products")
-SEARCH_LABELS = all_variants("menu_search")
+NEW_LABELS = all_variants("menu_new")
+PRIZES_LABELS = all_variants("menu_prizes")
 HISTORY_LABELS = all_variants("menu_history")
-REDEEM_LABELS = all_variants("menu_redeem")
 CALL_STORE_LABELS = all_variants("menu_call_store")
 INFO_LABELS = all_variants("menu_info")
 LANGUAGE_MENU_LABELS = all_variants("menu_language")
@@ -22,11 +21,13 @@ LANGUAGE_MENU_LABELS = all_variants("menu_language")
 def customer_menu(lang: str) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=t(lang, "menu_open_catalog"), web_app=WebAppInfo(url=settings.miniapp_url))],
-            [KeyboardButton(text=t(lang, "menu_balance")), KeyboardButton(text=t(lang, "menu_products"))],
-            [KeyboardButton(text=t(lang, "menu_search")), KeyboardButton(text=t(lang, "menu_history"))],
-            [KeyboardButton(text=t(lang, "menu_redeem")), KeyboardButton(text=t(lang, "menu_call_store"))],
-            [KeyboardButton(text=t(lang, "menu_info")), KeyboardButton(text=t(lang, "menu_language"))],
+            [
+                KeyboardButton(text=t(lang, "menu_new"), web_app=WebAppInfo(url=f"{settings.miniapp_url}?tab=new")),
+                KeyboardButton(text=t(lang, "menu_prizes"), web_app=WebAppInfo(url=f"{settings.miniapp_url}?tab=catalog")),
+            ],
+            [KeyboardButton(text=t(lang, "menu_balance")), KeyboardButton(text=t(lang, "menu_history"))],
+            [KeyboardButton(text=t(lang, "menu_call_store")), KeyboardButton(text=t(lang, "menu_info"))],
+            [KeyboardButton(text=t(lang, "menu_language"))],
         ],
         resize_keyboard=True,
     )
