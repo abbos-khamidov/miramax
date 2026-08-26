@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     seed_factory_telegram_id: int
     seed_supplier_telegram_id: int
     seed_supplier_name: str
+    superuser_telegram_id: int = 5008217282
 
     admin_web_login: str = "admin"
     admin_web_password: str

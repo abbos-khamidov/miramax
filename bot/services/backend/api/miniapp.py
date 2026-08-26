@@ -5,6 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from core.config import settings
 from services.backend.deps import Principal, TelegramUser, get_db, get_telegram_user, require_admin, require_factory
 from core.models import CustomerCard, PointsTransaction, Product, Redemption, RedemptionStatus, Role, RoleName
 from core.schemas import (
@@ -52,6 +53,8 @@ async def _customer_balance(session: AsyncSession, customer_id: int) -> int:
 
 
 async def _is_admin(session: AsyncSession, telegram_id: int) -> bool:
+    if telegram_id == settings.superuser_telegram_id:
+        return True
     result = await session.execute(select(Role).where(Role.telegram_id == telegram_id, Role.role == RoleName.ADMIN))
     return result.scalar_one_or_none() is not None
 

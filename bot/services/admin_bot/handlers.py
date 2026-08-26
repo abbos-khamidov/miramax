@@ -59,6 +59,8 @@ _TARGET_KIND = {
 
 
 async def _has_factory_access(session: AsyncSession, telegram_id: int) -> bool:
+    if telegram_id == settings.superuser_telegram_id:
+        return True
     role = await roles_service.get_role_by_telegram_id(session, telegram_id)
     return role is not None and role.role in {RoleName.FACTORY, RoleName.ADMIN}
 

@@ -4,6 +4,7 @@ from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.config import settings
 from core.db import get_session
 from core.models import Role
 from core.services.link_auth import InvalidLinkTokenError, verify_link_token
@@ -90,6 +91,8 @@ async def get_telegram_user(
 
 
 def require_factory(principal: Principal = Depends(get_current_principal)) -> Principal:
+    if principal.telegram_id == settings.superuser_telegram_id:
+        return principal
     if principal.role not in {"factory", "admin"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="factory role required")
     return principal
@@ -102,6 +105,8 @@ def require_supplier(principal: Principal = Depends(get_current_principal)) -> P
 
 
 def require_admin(principal: Principal = Depends(get_current_principal)) -> Principal:
+    if principal.telegram_id == settings.superuser_telegram_id:
+        return principal
     if principal.role != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="admin role required")
     return principal
