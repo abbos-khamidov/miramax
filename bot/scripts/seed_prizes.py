@@ -5,6 +5,7 @@ in PRIZES is deactivated (not deleted — old rows may still be referenced by pa
 Redemption rows via product_id).
 """
 import asyncio
+from urllib.parse import quote
 
 from sqlalchemy import select
 
@@ -16,31 +17,32 @@ CATEGORY = "Sovg'alar"
 # (points_cost, name, icon_or_image_url) — from the client-provided prize list, cheapest
 # first. Real photos are Wikimedia Commons Special:FilePath URLs (stable, hotlink-safe
 # canonical redirects) — illustrative only, not Miramax's own product photography.
-# "Maxsus forma, Miramaxdan" (Miramax's own branded uniform) and "Labo" (car model could
-# not be confidently identified) have no sourceable public photo — left as emoji.
-_COMMONS = "https://commons.wikimedia.org/wiki/Special:FilePath/"
+def _commons(filename: str) -> str:
+    return "https://commons.wikimedia.org/wiki/Special:FilePath/" + quote(filename)
 
 PRIZES = [
-    (5, "Maxsus forma, Miramaxdan", "🎽"),
-    (10, "Dazmol", _COMMONS + "ClothesIron.JPG"),
-    (15, "Premium dazmol", _COMMONS + "Electric_steam_iron.jpg"),
-    (20, "Mikrotolqinli pech", _COMMONS + "Microwave_oven.jpg"),
-    (25, "Changyutgich", _COMMONS + "Vacuum_cleaner.jpg"),
-    (30, "32\" televizor", _COMMONS + "Television_LCD_50_Pulgadas.JPG"),
-    (40, "42\" televizor", _COMMONS + "Television_LCD_50_Pulgadas.JPG"),
-    (50, "55\" televizor", _COMMONS + "Television_LCD_50_Pulgadas.JPG"),
-    (100, "Kir yuvish mashinasi", _COMMONS + "Washing_Machine_Beko.jpg"),
-    (150, "Muzlatkich", _COMMONS + "Fridge.jpg"),
-    (200, "1 kishilik umra", _COMMONS + "Kaaba_Mecca.jpg"),
-    (250, "iPhone 17", _COMMONS + "White_iPhone_17.jpg"),
-    (300, "2 kishilik umra", _COMMONS + "Kaaba_Mecca.jpg"),
-    (500, "30 000 000 so'm pul mukofoti", _COMMONS + "50000_soms_of_Uzbekistan_(2017)_obverse.jpg"),
-    (1000, "65 000 000 so'm pul mukofoti", _COMMONS + "50000_soms_of_Uzbekistan_(2017)_obverse.jpg"),
-    (1500, "100 000 000 so'm pul mukofoti", _COMMONS + "50000_soms_of_Uzbekistan_(2017)_obverse.jpg"),
-    (2000, "Labo", "🚗"),
-    (3000, "Cobalt", _COMMONS + "Chevrolet_Cobalt_1.8_LTZ_2017_(38346300391).jpg"),
-    (4000, "Tracker", _COMMONS + "2022_Chevrolet_Tracker_1.2_Turbo_LS.jpg"),
-    (5000, "BYD", _COMMONS + "BYD_Atto_3_front-left.jpg"),
+    # Generic workwear/coveralls photo (no logo) standing in for the branded uniform —
+    # a real Miramax-branded photo should replace this once the client supplies one.
+    (5, "Maxsus forma, Miramaxdan", _commons("Worker_with_cylinders_-_DPLA_-_bb6dd856b0c64965fb55fff4a2351bb2.jpg")),
+    (10, "Dazmol", _commons("ClothesIron.JPG")),
+    (15, "Premium dazmol", _commons("Electric_steam_iron.jpg")),
+    (20, "Mikrotolqinli pech", _commons("Microwave_oven.jpg")),
+    (25, "Changyutgich", _commons("Vacuum_cleaner.jpg")),
+    (30, "32\" televizor", _commons("Television_LCD_50_Pulgadas.JPG")),
+    (40, "42\" televizor", _commons("Television_LCD_50_Pulgadas.JPG")),
+    (50, "55\" televizor", _commons("Television_LCD_50_Pulgadas.JPG")),
+    (100, "Kir yuvish mashinasi", _commons("Washing_Machine_Beko.jpg")),
+    (150, "Muzlatkich", _commons("Fridge.jpg")),
+    (200, "1 kishilik umra", _commons("Kaaba_Mecca.jpg")),
+    (250, "iPhone 17", _commons("White_iPhone_17.jpg")),
+    (300, "2 kishilik umra", _commons("Kaaba_Mecca.jpg")),
+    (500, "30 000 000 so'm pul mukofoti", _commons("50000_soms_of_Uzbekistan_(2017)_obverse.jpg")),
+    (1000, "65 000 000 so'm pul mukofoti", _commons("50000_soms_of_Uzbekistan_(2017)_obverse.jpg")),
+    (1500, "100 000 000 so'm pul mukofoti", _commons("50000_soms_of_Uzbekistan_(2017)_obverse.jpg")),
+    (2000, "Labo", _commons("GM Labo. Muqimiy street, Tashkent, Uzbekistan 01.jpg")),
+    (3000, "Cobalt", _commons("Chevrolet_Cobalt_1.8_LTZ_2017_(38346300391).jpg")),
+    (4000, "Tracker", _commons("2022_Chevrolet_Tracker_1.2_Turbo_LS.jpg")),
+    (5000, "BYD", _commons("BYD_Atto_3_front-left.jpg")),
 ]
 
 
