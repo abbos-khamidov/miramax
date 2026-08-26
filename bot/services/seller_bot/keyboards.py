@@ -3,8 +3,10 @@ from aiogram.types import (
     InlineKeyboardMarkup,
     KeyboardButton,
     ReplyKeyboardMarkup,
+    WebAppInfo,
 )
 
+from core.config import settings
 from services.seller_bot.i18n import LANGUAGE_LABELS, all_variants, t
 
 MY_STORES_LABELS = all_variants("menu_my_stores")
@@ -21,9 +23,14 @@ CANCEL_LABELS = all_variants("cancel_action")
 BACK_OR_CANCEL_LABELS = BACK_LABELS | CANCEL_LABELS
 
 
+def _bonus_site_button(lang: str) -> KeyboardButton:
+    return KeyboardButton(text=t(lang, "menu_bonus_site"), web_app=WebAppInfo(url=settings.miniapp_url))
+
+
 def supplier_menu(lang: str) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
+            [_bonus_site_button(lang)],
             [KeyboardButton(text=t(lang, "menu_my_stores")), KeyboardButton(text=t(lang, "menu_add_store"))],
             [KeyboardButton(text=t(lang, "menu_analytics")), KeyboardButton(text=t(lang, "menu_language"))],
         ],
@@ -34,6 +41,7 @@ def supplier_menu(lang: str) -> ReplyKeyboardMarkup:
 def seller_menu(lang: str) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
+            [_bonus_site_button(lang)],
             [KeyboardButton(text=t(lang, "seller_menu_issue_points"))],
             [KeyboardButton(text=t(lang, "menu_add_store")), KeyboardButton(text=t(lang, "seller_menu_add_client"))],
             [KeyboardButton(text=t(lang, "seller_menu_info")), KeyboardButton(text=t(lang, "seller_menu_support"))],
@@ -58,11 +66,13 @@ def match_list_menu(lang: str, labels: list[str], allow_new: bool = False) -> Re
     return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
 
 
-def language_menu() -> ReplyKeyboardMarkup:
-    return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text=label) for label in LANGUAGE_LABELS.values()]],
-        resize_keyboard=True,
-    )
+def language_menu(cancel_lang: str | None = None) -> ReplyKeyboardMarkup:
+    """cancel_lang adds a Cancel row — only when there's somewhere to cancel back to
+    (an existing role.language). First-run language pick has none, it's mandatory."""
+    keyboard = [[KeyboardButton(text=label) for label in LANGUAGE_LABELS.values()]]
+    if cancel_lang is not None:
+        keyboard.append([KeyboardButton(text=t(cancel_lang, "cancel_action"))])
+    return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
 
 
 def confirm_new_client_keyboard(lang: str) -> InlineKeyboardMarkup:

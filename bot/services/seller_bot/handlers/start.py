@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from aiogram import F, Router
-from aiogram.filters import Command, CommandObject, CommandStart
+from aiogram.filters import Command, CommandObject, CommandStart, StateFilter
 from aiogram.types import FSInputFile, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,7 +17,7 @@ from services.seller_bot.i18n import (
     LANGUAGE_LABELS,
     t,
 )
-from services.seller_bot.keyboards import LANGUAGE_MENU_LABELS, language_menu
+from services.seller_bot.keyboards import CANCEL_LABELS, LANGUAGE_MENU_LABELS, language_menu
 
 router = Router(name="supplier_seller_start")
 
@@ -114,4 +114,12 @@ async def language_menu_button(message: Message, session: AsyncSession) -> None:
         await message.answer(t("ru", "no_access"))
         return
     lang = role.language or "ru"
-    await message.answer(t(lang, "choose_language"), reply_markup=language_menu())
+    await message.answer(t(lang, "choose_language"), reply_markup=language_menu(cancel_lang=lang))
+
+
+@router.message(StateFilter(None), F.text.in_(CANCEL_LABELS))
+async def language_menu_cancel(message: Message, session: AsyncSession) -> None:
+    role = await roles_service.get_role_by_telegram_id(session, message.from_user.id)
+    if role is None or role.role not in (RoleName.SUPPLIER, RoleName.SELLER) or role.language is None:
+        return
+    await _send_menu(message, role.role, role.language)

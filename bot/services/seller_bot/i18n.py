@@ -46,6 +46,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         ),
         "help_seller": "Вы — Продавец. Полная инструкция — в кнопке «ℹ️ Информация».",
         # supplier menu
+        "menu_bonus_site": "🎁 Бонусы MiramaxMPP",
         "menu_my_stores": "🏬 Мои магазины",
         "menu_add_store": "➕ Добавить магазин",
         "menu_analytics": "📊 Аналитика по моей сети",
@@ -128,6 +129,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "• «📊 Tarmog'im bo'yicha analitika» — do'konlaringiz bo'yicha hisobot."
         ),
         "help_seller": "Siz — Sotuvchi. To'liq yo'riqnoma — «ℹ️ Ma'lumot» tugmasida.",
+        "menu_bonus_site": "🎁 MiramaxMPP bonuslari",
         "menu_my_stores": "🏬 Mening do'konlarim",
         "menu_add_store": "➕ Do'kon qo'shish",
         "menu_analytics": "📊 Tarmog'im bo'yicha analitika",
@@ -209,6 +211,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "• «📊 Ağımın analizi» — mağazalarınıza göre özet."
         ),
         "help_seller": "Siz — Satıcısınız. Tam kılavuz — «ℹ️ Bilgi» düğmesinde.",
+        "menu_bonus_site": "🎁 MiramaxMPP bonusları",
         "menu_my_stores": "🏬 Mağazalarım",
         "menu_add_store": "➕ Mağaza ekle",
         "menu_analytics": "📊 Ağımın analizi",
