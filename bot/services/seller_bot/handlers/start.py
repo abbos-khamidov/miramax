@@ -5,9 +5,11 @@ from aiogram.filters import Command, CommandObject, CommandStart, StateFilter
 from aiogram.types import FSInputFile, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.config import settings
 from core.models import InviteTargetRole, RoleName
 from core.services import invites as invites_service
 from core.services import roles as roles_service
+from core.services.link_auth import issue_link_token
 from services.seller_bot.handlers.seller import send_seller_menu
 from services.seller_bot.handlers.supplier import send_supplier_menu
 from services.seller_bot.i18n import (
@@ -17,7 +19,7 @@ from services.seller_bot.i18n import (
     LANGUAGE_LABELS,
     t,
 )
-from services.seller_bot.keyboards import CANCEL_LABELS, LANGUAGE_MENU_LABELS, language_menu
+from services.seller_bot.keyboards import BONUS_SITE_LABELS, CANCEL_LABELS, LANGUAGE_MENU_LABELS, language_menu
 
 router = Router(name="supplier_seller_start")
 
@@ -105,6 +107,18 @@ async def language_chosen(message: Message, session: AsyncSession) -> None:
         await message.answer_video(FSInputFile(HELP_VIDEO_PATH))
 
     await _send_menu(message, role.role, lang)
+
+
+@router.message(F.text.in_(BONUS_SITE_LABELS))
+async def bonus_site_button(message: Message, session: AsyncSession) -> None:
+    role = await roles_service.get_role_by_telegram_id(session, message.from_user.id)
+    if role is None or role.role not in (RoleName.SUPPLIER, RoleName.SELLER):
+        await message.answer(t("ru", "no_access"))
+        return
+    lang = role.language or "ru"
+    token = issue_link_token(message.from_user.id)
+    link = f"{settings.miniapp_url}?token={token}"
+    await message.answer(t(lang, "bonus_site_text", link=link))
 
 
 @router.message(F.text.in_(LANGUAGE_MENU_LABELS))

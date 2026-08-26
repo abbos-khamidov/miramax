@@ -3,10 +3,8 @@ from aiogram.types import (
     InlineKeyboardMarkup,
     KeyboardButton,
     ReplyKeyboardMarkup,
-    WebAppInfo,
 )
 
-from core.config import settings
 from services.client_bot.i18n import LANGUAGE_LABELS, all_variants, t
 
 BALANCE_LABELS = all_variants("menu_balance")
@@ -20,11 +18,6 @@ LANGUAGE_MENU_LABELS = all_variants("menu_language")
 def customer_menu(lang: str) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            # WebApp button — opens the site in one tap, no bot round-trip. Unlike the
-            # personalized "Призы" token-link flow below, this carries no identity, so
-            # it always opens (no initData dependency) but shows the generic public
-            # catalog rather than the customer's own balance.
-            [KeyboardButton(text=t(lang, "menu_bonus_site"), web_app=WebAppInfo(url=settings.miniapp_url))],
             [KeyboardButton(text=t(lang, "menu_prizes"))],
             [KeyboardButton(text=t(lang, "menu_balance")), KeyboardButton(text=t(lang, "menu_history"))],
             [KeyboardButton(text=t(lang, "menu_call_store")), KeyboardButton(text=t(lang, "menu_info"))],
