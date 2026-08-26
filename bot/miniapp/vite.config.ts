@@ -3,7 +3,10 @@ import path from "path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  // Served from miramaxmpp.uz/bonuses/ in production (same nginx/domain as the rest
+  // of the site — no separate hosting to keep in sync). Dev server stays at root.
+  base: command === "build" ? "/bonuses/" : "/",
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
@@ -22,4 +25,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));
