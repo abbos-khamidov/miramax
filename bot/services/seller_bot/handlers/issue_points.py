@@ -28,6 +28,12 @@ router = Router(name="issue_points")
 
 MATCH_LIMIT = 6
 
+# Guards against a fast double-tap firing the same write twice (duplicate customer,
+# double-awarded points) — Telegram delivers each tap as its own callback_query, and
+# aiogram processes updates concurrently, so nothing else serializes these. Checked
+# and set synchronously (no `await` in between), so it's race-free within one process.
+_in_flight_sellers: set[int] = set()
+
 
 async def _lang_for(session: AsyncSession, telegram_id: int) -> str:
     role = await roles_service.get_role_by_telegram_id(session, telegram_id)
@@ -123,16 +129,24 @@ async def issue_points_phone(message: Message, state: FSMContext, session: Async
 
 @router.callback_query(IssuePointsForm.confirming_new, F.data == "new_client_yes")
 async def confirm_new_client_yes(callback: CallbackQuery, state: FSMContext, session: AsyncSession) -> None:
-    data = await state.get_data()
-    full_name = " ".join(part for part in [data["first_name"], data["last_name"]] if part)
-    role = await roles_service.get_role_by_telegram_id(session, callback.from_user.id)
-    customer = await customers_service.create_pending_customer(
-        session, first_name=full_name, phone=data["phone"], store_id=role.store_id if role else None
-    )
-    await state.update_data(customer_id=customer.id, is_new=True)
-    await callback.message.edit_reply_markup(reply_markup=None)
-    await callback.answer()
-    await _start_composing(callback.message, state, session)
+    seller_id = callback.from_user.id
+    if seller_id in _in_flight_sellers:
+        await callback.answer()
+        return
+    _in_flight_sellers.add(seller_id)
+    try:
+        data = await state.get_data()
+        full_name = " ".join(part for part in [data["first_name"], data["last_name"]] if part)
+        role = await roles_service.get_role_by_telegram_id(session, callback.from_user.id)
+        customer = await customers_service.create_pending_customer(
+            session, first_name=full_name, phone=data["phone"], store_id=role.store_id if role else None
+        )
+        await state.update_data(customer_id=customer.id, is_new=True)
+        await callback.message.edit_reply_markup(reply_markup=None)
+        await callback.answer()
+        await _start_composing(callback.message, state, session)
+    finally:
+        _in_flight_sellers.discard(seller_id)
 
 
 @router.callback_query(IssuePointsForm.confirming_new, F.data == "new_client_no")
@@ -193,58 +207,66 @@ async def tier_reset(callback: CallbackQuery, state: FSMContext, session: AsyncS
 
 @router.callback_query(IssuePointsForm.composing, F.data == "tier_confirm")
 async def tier_confirm(callback: CallbackQuery, state: FSMContext, session: AsyncSession) -> None:
-    data = await state.get_data()
-    lang = data["lang"]
-    cart: dict[int, int] = data.get("cart", {})
-
-    tiers = await tiers_service.load_tiers(session)
-    total_points = sum(tiers.get(tier, 0) * qty for tier, qty in cart.items())
-    if total_points <= 0:
-        await callback.answer(t(lang, "tier_not_configured"), show_alert=True)
+    seller_id = callback.from_user.id
+    if seller_id in _in_flight_sellers:
+        await callback.answer()
         return
+    _in_flight_sellers.add(seller_id)
+    try:
+        data = await state.get_data()
+        lang = data["lang"]
+        cart: dict[int, int] = data.get("cart", {})
 
-    role = await roles_service.get_role_by_telegram_id(session, callback.from_user.id)
-    if role is None or role.store_id is None:
-        await callback.answer(t(lang, "no_store_link"), show_alert=True)
-        return
+        tiers = await tiers_service.load_tiers(session)
+        total_points = sum(tiers.get(tier, 0) * qty for tier, qty in cart.items())
+        if total_points <= 0:
+            await callback.answer(t(lang, "tier_not_configured"), show_alert=True)
+            return
 
-    _sale_id, total_points = await tiers_service.record_tier_sale(
-        session,
-        customer_id=data["customer_id"],
-        store_id=role.store_id,
-        seller_telegram_id=callback.from_user.id,
-        cart=cart,
-    )
-    await state.clear()
+        role = await roles_service.get_role_by_telegram_id(session, callback.from_user.id)
+        if role is None or role.store_id is None:
+            await callback.answer(t(lang, "no_store_link"), show_alert=True)
+            return
 
-    customer = await customers_service.get_customer(session, data["customer_id"])
-    full_name = " ".join(part for part in [data.get("first_name"), data.get("last_name")] if part)
-    client_name = customer.full_name if customer else full_name
+        _sale_id, total_points = await tiers_service.record_tier_sale(
+            session,
+            customer_id=data["customer_id"],
+            store_id=role.store_id,
+            seller_telegram_id=callback.from_user.id,
+            cart=cart,
+        )
+        await state.clear()
 
-    await callback.message.edit_reply_markup(reply_markup=None)
-    await callback.answer()
-    await callback.message.answer(
-        t(lang, "tier_sale_confirmed", points=f"{total_points:,}".replace(",", " "), name=client_name),
-        reply_markup=seller_menu(lang),
-    )
+        customer = await customers_service.get_customer(session, data["customer_id"])
+        full_name = " ".join(part for part in [data.get("first_name"), data.get("last_name")] if part)
+        client_name = customer.full_name if customer else full_name
 
-    if customer is not None and customer.telegram_id is not None:
-        balance = await customers_service.get_customer_balance(session, customer.id)
-        await notify_customer(
-            customer.telegram_id,
-            f"🎉 Вам начислено <b>{total_points} баллов</b>.\n"
-            f"Ваш баланс: <b>{balance} баллов</b>.",
+        await callback.message.edit_reply_markup(reply_markup=None)
+        await callback.answer()
+        await callback.message.answer(
+            t(lang, "tier_sale_confirmed", points=f"{total_points:,}".replace(",", " "), name=client_name),
+            reply_markup=seller_menu(lang),
         )
 
-    if data.get("is_new"):
-        invite, link = await invites_service.create_customer_invite(
-            session, customer_card_id=data["customer_id"], first_name=client_name, phone=data.get("phone", "")
-        )
-        qr_img = qrcode.make(link)
-        buf = io.BytesIO()
-        qr_img.save(buf, format="PNG")
-        buf.seek(0)
-        await callback.message.answer_photo(
-            BufferedInputFile(buf.read(), filename="invite.png"),
-            caption=t(lang, "new_customer_invite_caption", link=link),
-        )
+        if customer is not None and customer.telegram_id is not None:
+            balance = await customers_service.get_customer_balance(session, customer.id)
+            await notify_customer(
+                customer.telegram_id,
+                f"🎉 Вам начислено <b>{total_points} баллов</b>.\n"
+                f"Ваш баланс: <b>{balance} баллов</b>.",
+            )
+
+        if data.get("is_new"):
+            invite, link = await invites_service.create_customer_invite(
+                session, customer_card_id=data["customer_id"], first_name=client_name, phone=data.get("phone", "")
+            )
+            qr_img = qrcode.make(link)
+            buf = io.BytesIO()
+            qr_img.save(buf, format="PNG")
+            buf.seek(0)
+            await callback.message.answer_photo(
+                BufferedInputFile(buf.read(), filename="invite.png"),
+                caption=t(lang, "new_customer_invite_caption", link=link),
+            )
+    finally:
+        _in_flight_sellers.discard(seller_id)
