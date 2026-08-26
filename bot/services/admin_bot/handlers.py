@@ -4,7 +4,7 @@ import qrcode
 from aiogram import Bot, F, Router
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.fsm.context import FSMContext
-from aiogram.types import BufferedInputFile, Message
+from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboardMarkup, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import settings
@@ -304,7 +304,10 @@ async def factory_analytics(message: Message, session: AsyncSession) -> None:
         await message.answer(t("ru", "no_access"))
         return
     lang = await _lang_for(session, message.from_user.id) or "ru"
-    await message.answer(t(lang, "analytics_link_text", link=settings.analytics_url))
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text=t(lang, "analytics_open_button"), url=settings.analytics_url)]]
+    )
+    await message.answer(t(lang, "analytics_link_text"), reply_markup=keyboard)
 
 
 @router.message(F.text.in_(POINTS_RATE_LABELS))
