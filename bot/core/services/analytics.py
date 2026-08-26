@@ -12,6 +12,7 @@ from core.schemas import (
     OverviewSeriesPoint,
     OverviewTopEntity,
     OverviewTotals,
+    CityBreakdownItem,
     SellerLeaderboardItem,
     StoreAnalytics,
     StoreLeaderboardItem,
@@ -307,6 +308,28 @@ def _bottom_slice(ranked: list, highlight_count: int) -> list:
     if len(ranked) <= highlight_count:
         return []
     return list(reversed(ranked[max(highlight_count, len(ranked) - highlight_count):]))
+
+
+async def get_city_breakdown(session: AsyncSession) -> list[CityBreakdownItem]:
+    """Points issued grouped by Store.city, descending — stores without a city are
+    dropped rather than lumped into a misleading "—" bucket."""
+    result = await session.execute(
+        select(
+            Store.city,
+            func.count(PointsTransaction.id),
+            func.coalesce(func.sum(PointsTransaction.points), 0),
+        )
+        .select_from(PointsTransaction)
+        .join(Store, Store.id == PointsTransaction.store_id)
+        .where(Store.city.isnot(None))
+        .group_by(Store.city)
+    )
+    items = [
+        CityBreakdownItem(city=city, sales_count=int(count), points_issued=int(points))
+        for city, count, points in result.all()
+    ]
+    items.sort(key=lambda i: i.points_issued, reverse=True)
+    return items
 
 
 async def get_web_home(session: AsyncSession, highlight_count: int = 5) -> WebHomeOut:

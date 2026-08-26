@@ -4,10 +4,17 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.models import Product
-from core.schemas import FactoryOverview, ProductOut, StoreLeaderboardItem, WebAdminItem, WebHomeOut
+from core.schemas import (
+    CityBreakdownItem,
+    FactoryOverview,
+    ProductOut,
+    StoreLeaderboardItem,
+    WebAdminItem,
+    WebHomeOut,
+)
 from core.services import directory as directory_service
 from core.services import web_auth
-from core.services.analytics import get_factory_overview, get_store_leaderboard, get_web_home
+from core.services.analytics import get_city_breakdown, get_factory_overview, get_store_leaderboard, get_web_home
 from services.backend.deps import get_db
 
 router = APIRouter(prefix="/api/web", tags=["web-analytics"])
@@ -66,6 +73,14 @@ async def web_products(
 ) -> list[ProductOut]:
     result = await session.execute(select(Product).order_by(Product.created_at.desc(), Product.id.desc()))
     return list(result.scalars().all())
+
+
+@router.get("/cities", response_model=list[CityBreakdownItem])
+async def web_cities(
+    session: AsyncSession = Depends(get_db),
+    _auth: None = Depends(require_web_session),
+) -> list[CityBreakdownItem]:
+    return await get_city_breakdown(session)
 
 
 @router.get("/admins", response_model=list[WebAdminItem])

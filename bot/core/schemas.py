@@ -260,3 +260,9 @@ class WebAdminItem(BaseModel):
     first_name: str | None
     last_name: str | None
     phone: str | None
+
+
+class CityBreakdownItem(BaseModel):
+    city: str
+    sales_count: int
+    points_issued: int
