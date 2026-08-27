@@ -10,14 +10,14 @@ class AddStoreForm(StatesGroup):
 
 
 class IssuePointsForm(StatesGroup):
-    """Выдать баллы — find/register the customer, then pick the sale amount from
-    the tier buttons (composing)."""
+    """Выдать баллы — phone number first (existing customers need nothing else,
+    their name is looked up), name/surname only asked if the phone is genuinely new."""
 
-    waiting_first_name = State()
-    waiting_last_name = State()
     waiting_phone = State()
     choosing_match = State()
     confirming_new = State()
+    waiting_new_first_name = State()
+    waiting_new_last_name = State()
     composing = State()
 
 

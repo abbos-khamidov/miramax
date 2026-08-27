@@ -58,8 +58,8 @@ def _match_map(lang: str, customers: list[CustomerCard]) -> tuple[list[str], dic
 async def issue_points_start(message: Message, state: FSMContext, session: AsyncSession) -> None:
     lang = await _lang_for(session, message.from_user.id)
     await state.update_data(lang=lang)
-    await state.set_state(IssuePointsForm.waiting_first_name)
-    await message.answer(t(lang, "ask_client_first_name"), reply_markup=back_menu(lang))
+    await state.set_state(IssuePointsForm.waiting_phone)
+    await message.answer(t(lang, "ask_client_phone"), reply_markup=back_menu(lang))
 
 
 @router.message(IssuePointsForm(), F.text.in_(BACK_OR_CANCEL_LABELS))
@@ -67,20 +67,6 @@ async def issue_points_cancel(message: Message, state: FSMContext, session: Asyn
     lang = await _lang_for(session, message.from_user.id)
     await state.clear()
     await message.answer(t(lang, "help_seller"), reply_markup=seller_menu(lang))
-
-
-@router.message(IssuePointsForm.waiting_first_name)
-async def issue_points_first_name(message: Message, state: FSMContext) -> None:
-    data = await state.update_data(first_name=message.text)
-    await state.set_state(IssuePointsForm.waiting_last_name)
-    await message.answer(t(data["lang"], "ask_client_last_name"), reply_markup=back_menu(data["lang"]))
-
-
-@router.message(IssuePointsForm.waiting_last_name)
-async def issue_points_last_name(message: Message, state: FSMContext) -> None:
-    data = await state.update_data(last_name=message.text)
-    await state.set_state(IssuePointsForm.waiting_phone)
-    await message.answer(t(data["lang"], "ask_client_phone"), reply_markup=back_menu(data["lang"]))
 
 
 def _compose_text(lang: str, cart: dict[int, int]) -> str:
@@ -115,7 +101,9 @@ async def issue_points_phone(message: Message, state: FSMContext, session: Async
 
     matches = await customers_service.search_customers(session, message.text or "", limit=MATCH_LIMIT)
     if len(matches) == 1:
-        await state.update_data(customer_id=matches[0].id, is_new=False)
+        customer = matches[0]
+        await state.update_data(customer_id=customer.id, is_new=False)
+        await message.answer(t(lang, "client_found", name=customer.full_name or "—", phone=customer.phone or "—"))
         await _start_composing(message, state, session)
         return
     if len(matches) > 1:
@@ -131,24 +119,12 @@ async def issue_points_phone(message: Message, state: FSMContext, session: Async
 
 @router.callback_query(IssuePointsForm.confirming_new, F.data == "new_client_yes")
 async def confirm_new_client_yes(callback: CallbackQuery, state: FSMContext, session: AsyncSession) -> None:
-    seller_id = callback.from_user.id
-    if seller_id in _in_flight_sellers:
-        await callback.answer()
-        return
-    _in_flight_sellers.add(seller_id)
-    try:
-        data = await state.get_data()
-        full_name = " ".join(part for part in [data["first_name"], data["last_name"]] if part)
-        role = await roles_service.get_role_by_telegram_id(session, callback.from_user.id)
-        customer = await customers_service.create_pending_customer(
-            session, first_name=full_name, phone=data["phone"], store_id=role.store_id if role else None
-        )
-        await state.update_data(customer_id=customer.id, is_new=True)
-        await callback.message.edit_reply_markup(reply_markup=None)
-        await callback.answer()
-        await _start_composing(callback.message, state, session)
-    finally:
-        _in_flight_sellers.discard(seller_id)
+    data = await state.get_data()
+    lang = data["lang"]
+    await state.set_state(IssuePointsForm.waiting_new_first_name)
+    await callback.message.edit_reply_markup(reply_markup=None)
+    await callback.answer()
+    await callback.message.answer(t(lang, "ask_client_first_name"), reply_markup=back_menu(lang))
 
 
 @router.callback_query(IssuePointsForm.confirming_new, F.data == "new_client_no")
@@ -161,24 +137,40 @@ async def confirm_new_client_no(callback: CallbackQuery, state: FSMContext, sess
     await callback.message.answer(t(lang, "help_seller"), reply_markup=seller_menu(lang))
 
 
+@router.message(IssuePointsForm.waiting_new_first_name)
+async def issue_points_new_first_name(message: Message, state: FSMContext) -> None:
+    data = await state.update_data(first_name=message.text)
+    await state.set_state(IssuePointsForm.waiting_new_last_name)
+    await message.answer(t(data["lang"], "ask_client_last_name"), reply_markup=back_menu(data["lang"]))
+
+
+@router.message(IssuePointsForm.waiting_new_last_name)
+async def issue_points_new_last_name(message: Message, state: FSMContext, session: AsyncSession) -> None:
+    data = await state.update_data(last_name=message.text)
+    lang = data["lang"]
+    full_name = " ".join(part for part in [data.get("first_name"), data.get("last_name")] if part)
+    role = await roles_service.get_role_by_telegram_id(session, message.from_user.id)
+    customer = await customers_service.create_pending_customer(
+        session, first_name=full_name, phone=data["phone"], store_id=role.store_id if role else None
+    )
+    await state.update_data(customer_id=customer.id, is_new=True)
+    await _start_composing(message, state, session)
+
+
 @router.message(IssuePointsForm.choosing_match)
 async def issue_points_choose_match(message: Message, state: FSMContext, session: AsyncSession) -> None:
     data = await state.get_data()
     lang = data["lang"]
 
     if message.text == t(lang, "match_create_new"):
-        full_name = " ".join(part for part in [data["first_name"], data["last_name"]] if part)
-        role = await roles_service.get_role_by_telegram_id(session, message.from_user.id)
-        customer = await customers_service.create_pending_customer(
-            session, first_name=full_name, phone=data["phone"], store_id=role.store_id if role else None
-        )
-        await state.update_data(customer_id=customer.id, is_new=True)
-    else:
-        customer_id = data.get("match_map", {}).get(message.text)
-        if customer_id is None:
-            return
-        await state.update_data(customer_id=customer_id, is_new=False)
+        await state.set_state(IssuePointsForm.waiting_new_first_name)
+        await message.answer(t(lang, "ask_client_first_name"), reply_markup=back_menu(lang))
+        return
 
+    customer_id = data.get("match_map", {}).get(message.text)
+    if customer_id is None:
+        return
+    await state.update_data(customer_id=customer_id, is_new=False)
     await _start_composing(message, state, session)
 
 
