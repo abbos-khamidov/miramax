@@ -87,11 +87,13 @@ def confirm_new_client_keyboard(lang: str) -> InlineKeyboardMarkup:
     )
 
 
-def tier_composer_keyboard(lang: str, tiers: dict[int, int], cart: dict[int, int]) -> InlineKeyboardMarkup:
-    """One coupon-style button per active tier (номинал), showing ×N once tapped,
-    plus a confirm/reset row once something is in the cart."""
+def tier_composer_keyboard(lang: str, tier_amounts: list[int], cart: dict[int, int], total_points: int) -> InlineKeyboardMarkup:
+    """One coupon-style button per active номинал amount, showing ×N once tapped,
+    plus a confirm/reset row once something is in the cart. total_points is computed
+    by the caller off the whole cart's sum (core/services/tiers.py:points_for_cart) —
+    a single global rate, not a per-tier value baked into this keyboard."""
     rows = []
-    for tier, points in tiers.items():
+    for tier in tier_amounts:
         qty = cart.get(tier, 0)
         label = f"{tier:,}".replace(",", " ") + " сум"
         if qty:
@@ -99,19 +101,14 @@ def tier_composer_keyboard(lang: str, tiers: dict[int, int], cart: dict[int, int
         rows.append([InlineKeyboardButton(text=label, callback_data=f"tier:{tier}")])
 
     if cart:
-        total_points = sum(points_for_tier(tiers, tier) * qty for tier, qty in cart.items())
         rows.append([InlineKeyboardButton(text=t(lang, "tier_reset_button"), callback_data="tier_reset")])
         confirm_label = (
             t(lang, "tier_confirm_button", points=f"{total_points:,}".replace(",", " "))
             if total_points > 0
-            else t(lang, "tier_not_configured_button")
+            else t(lang, "tier_amount_too_small_button")
         )
-        # Always rendered (never silently missing) — tapping it while unconfigured still
-        # routes through tier_confirm, which shows the "не настроено" alert either way.
+        # Always rendered (never silently missing) — tapping it while the sum is still
+        # too small for even 1 point still routes through tier_confirm, which shows an alert.
         rows.append([InlineKeyboardButton(text=confirm_label, callback_data="tier_confirm")])
 
     return InlineKeyboardMarkup(inline_keyboard=rows)
-
-
-def points_for_tier(tiers: dict[int, int], tier: int) -> int:
-    return tiers.get(tier, 0)

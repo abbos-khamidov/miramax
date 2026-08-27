@@ -1,9 +1,11 @@
+import math
+
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.models import CustomerCard, PointsConfig, PointsTransaction, Redemption, RedemptionStatus
 
-DEFAULT_SUM_PER_POINT = 100_000  # fallback if the points_config row is somehow missing
+DEFAULT_SUM_PER_POINT = 1_000_000  # fallback if the points_config row is somehow missing; 1,000,000 сум = 1 балл
 
 
 async def create_pending_customer(
@@ -66,8 +68,15 @@ async def set_sum_per_point(session: AsyncSession, sum_per_point: int) -> None:
 
 
 async def points_for_amount(session: AsyncSession, amount: float) -> int:
+    """The single source of truth for sum→points conversion, used both by the legacy
+    record_sale() below and by the seller_bot tier-composer flow (core/services/tiers.py)
+    — one global rate, applied once to the whole sale's total, not per individual tap.
+    Half-up rounding (not Python's banker's round()) so an exact X.5 sale always rounds
+    in the customer's favor, consistently."""
     sum_per_point = await get_sum_per_point(session)
-    return round(amount / sum_per_point) if sum_per_point else 0
+    if not sum_per_point:
+        return 0
+    return math.floor(amount / sum_per_point + 0.5)
 
 
 async def record_sale(

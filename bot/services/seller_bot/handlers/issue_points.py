@@ -103,7 +103,9 @@ async def _start_composing(message: Message, state: FSMContext, session: AsyncSe
     tiers = await tiers_service.load_tiers(session)
     await state.update_data(cart={})
     await state.set_state(IssuePointsForm.composing)
-    await message.answer(_compose_text(lang, {}), reply_markup=tier_composer_keyboard(lang, tiers, {}))
+    await message.answer(
+        _compose_text(lang, {}), reply_markup=tier_composer_keyboard(lang, list(tiers), {}, total_points=0)
+    )
 
 
 @router.message(IssuePointsForm.waiting_phone)
@@ -190,7 +192,10 @@ async def tier_tap(callback: CallbackQuery, state: FSMContext, session: AsyncSes
     await state.update_data(cart=cart)
 
     tiers = await tiers_service.load_tiers(session)
-    await callback.message.edit_text(_compose_text(lang, cart), reply_markup=tier_composer_keyboard(lang, tiers, cart))
+    total_points = await tiers_service.points_for_cart(session, cart)
+    await callback.message.edit_text(
+        _compose_text(lang, cart), reply_markup=tier_composer_keyboard(lang, list(tiers), cart, total_points)
+    )
     await callback.answer()
 
 
@@ -201,7 +206,9 @@ async def tier_reset(callback: CallbackQuery, state: FSMContext, session: AsyncS
     await state.update_data(cart={})
 
     tiers = await tiers_service.load_tiers(session)
-    await callback.message.edit_text(_compose_text(lang, {}), reply_markup=tier_composer_keyboard(lang, tiers, {}))
+    await callback.message.edit_text(
+        _compose_text(lang, {}), reply_markup=tier_composer_keyboard(lang, list(tiers), {}, total_points=0)
+    )
     await callback.answer()
 
 
@@ -217,10 +224,9 @@ async def tier_confirm(callback: CallbackQuery, state: FSMContext, session: Asyn
         lang = data["lang"]
         cart: dict[int, int] = data.get("cart", {})
 
-        tiers = await tiers_service.load_tiers(session)
-        total_points = sum(tiers.get(tier, 0) * qty for tier, qty in cart.items())
+        total_points = await tiers_service.points_for_cart(session, cart)
         if total_points <= 0:
-            await callback.answer(t(lang, "tier_not_configured"), show_alert=True)
+            await callback.answer(t(lang, "tier_amount_too_small"), show_alert=True)
             return
 
         role = await roles_service.get_role_by_telegram_id(session, callback.from_user.id)

@@ -420,11 +420,16 @@ async def show_tiers_cmd(message: Message, session: AsyncSession) -> None:
         await message.answer(t(lang, "show_tiers_empty"))
         return
 
-    lines = []
+    # Points are computed off the whole sale's total at the single global rate
+    # ("Курс баллов") now, not per номинал — the header states that rate up front so
+    # the per-tier lines below (just amount + active/inactive) can't be misread as
+    # each one having its own separate rate.
+    sum_per_point = await customers_service.get_sum_per_point(session)
+    lines = [t(lang, "show_tiers_rate", sum_per_point=f"{sum_per_point:,}".replace(",", " "))]
     for tc in tiers:
         tier_fmt = f"{tc.tier:,}".replace(",", " ")
         status = "✅" if tc.active else "⛔️"
-        lines.append(f"{status} {tier_fmt} сум → {tc.points} баллов")
+        lines.append(f"{status} {tier_fmt} сум")
 
     await message.answer(t(lang, "show_tiers_header") + "\n" + "\n".join(lines))
 
